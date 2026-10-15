@@ -1,0 +1,10 @@
+/SoundProbe.dll
+/RulesTests.exe
+/*.rsp
+/UnityFixture/Library/
+/UnityFixture/Temp/
+/UnityFixture/Logs/
+/UnityFixture/obj/
+/UnityFixture/UserSettings/
+/UnityFixture/ProjectSettings/*
+!/UnityFixture/ProjectSettings/ProjectVersion.txt

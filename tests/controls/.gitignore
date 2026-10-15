@@ -1,0 +1,7 @@
+bin/
+obj/
+UnityFixture/Library/
+UnityFixture/Temp/
+UnityFixture/Logs/
+UnityFixture/obj/
+UnityFixture/UserSettings/

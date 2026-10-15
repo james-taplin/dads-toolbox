@@ -1,0 +1,246 @@
+{
+  "date": "2026-10-15",
+  "package": "DadsToolbox",
+  "version": "0.4.0",
+  "status": "development candidate; isolated integration verified; live-world acceptance pending",
+  "binarySha256": "F301D91A959AD49EF8607008EEF9F7EA6CB76BA236C22C8ABA84CD8AB572DA69",
+  "passed": 16600,
+  "failed": 0,
+  "modules": [
+    "SkinDamageFix",
+    "SkinRegistrationFix",
+    "DoubleTrackSigns",
+    "HudGuard",
+    "ConsistFix",
+    "CclControlFix",
+    "LocoSoundPitch",
+    "SmokeFix"
+  ],
+  "features": [
+    "HUD Guard",
+    "Consist Fix (H6F)",
+    "CCL Control Fix",
+    "Loco Sound Pitch",
+    "Skin Manager Fix",
+    "CCL Smoke Fix",
+    "DoubleTrack sign clearance"
+  ],
+  "supportedOptionalDependencies": [
+    {
+      "id": "SkinManagerMod",
+      "ummVersion": "4.4.1",
+      "assemblyVersion": "4.2.0.0",
+      "sha256": "9B98DC0364AB1CD85D1AA3844B9EDAE03C8E95145440C4C2E41CA73858D87620"
+    },
+    {
+      "id": "DoubleTrack",
+      "ummVersion": "2.1.1",
+      "sha256": "B3B7771C8A9D06E1AED79E5BFE172E19A1F87F9D38A7C27048FAD6FB5558D9E4"
+    },
+    {
+      "id": "DVCustomCarLoader",
+      "ummVersion": "3.1.9",
+      "requiredFor": "Embedded skin registration, CCL controls and H6F consist repair",
+      "sha256": "C4A7B0B0E8980A361F2C143482103AE7788A3DB76103947179C4430645F0CE60"
+    },
+    {
+      "id": "HeadsUpDisplay_994",
+      "ummVersion": "1.1.2",
+      "requiredFor": "HUD Guard"
+    },
+    {
+      "id": "em_h6f_main",
+      "ummVersion": "1.0.0",
+      "dataOnly": true,
+      "requiredFor": "H6F consist repair only"
+    }
+  ],
+  "checks": [
+    {
+      "passed": 70,
+      "failed": 0,
+      "scope": "Actual installed UMM/Harmony/DoubleTrack/standalone metadata and compiled Toolbox parent lifecycle, shared settings, conflicts and dependency changes. Synthetic Skin Manager patch target. No native scene or game process.",
+      "evidence": "evidence/managed/results/checks.txt"
+    },
+    {
+      "passed": 37,
+      "failed": 0,
+      "unityVersion": "2019.4.40f1",
+      "scope": "Installed native material handler and Skin Manager callback with the compiled Toolbox Harmony prefix in isolated Unity objects. Manually constructed explosion flag/callback transitions; no physical explosion, streaming or SaveManager.",
+      "evidence": "evidence/skin-damage/native-fixture-checks.txt"
+    },
+    {
+      "passed": 838,
+      "failed": 0,
+      "unityVersion": "2019.4.40f1",
+      "scope": "Actual Toolbox parent, installed UMM/DoubleTrack sign list, native registry/RailTrack point sets and Unity Transforms in isolated Unity Editor. Generated rail/list contents and controlled callback dispatch; no full game boot, generation coroutine, real map traversal, saves or GUI.",
+      "evidence": "evidence/sign-clearance/native-fixture-checks.txt"
+    },
+    {
+      "passed": 87,
+      "failed": 0,
+      "unityVersion": "2019.4.40f1",
+      "scope": "Actual installed UMM activation dispatch, Skin Manager callback/config discovery and PNG loading. Actual CCL callback target with fixture prefix replacing its bundle-import body by controlled livery registration. No injected skins or companion mod; full clean game/CCL boot, real pack import, streaming and save/reload remain untested.",
+      "evidence": "evidence/skin-startup/native-fixture-checks.txt"
+    },
+    {
+      "id": "combined",
+      "passed": 363,
+      "failed": 0,
+      "scope": "Exact combined DLL parent, eight independent preferences/all 256 native UMM XML combinations, older settings and real sibling sound-settings migration with byte preservation/precedence/retry, sole callback/event ownership, off/disabled and default-selected dependency-absent/inactive lifecycles, standalone conflicts, fresh recreation, injected failed cleanup with all eight cleanup attempts and foreign-owner preservation. No native Unity/game/audio execution.",
+      "evidence": "evidence/combined/checks.txt",
+      "receiptSha256": "BDE6FE5A4940722C0981F71B23ACE2598C23CB9DDDE4D0955E339BD5A9C0A0DA"
+    },
+    {
+      "id": "hud",
+      "passed": 118,
+      "failed": 0,
+      "scope": "hud canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
+      "evidence": "evidence/hud/checks.txt",
+      "receiptSha256": "8741E8112A6343F544C22C9548BBEC68D83D378D62B831FC38FFC5796A5CCCAB"
+    },
+    {
+      "id": "consist",
+      "passed": 87,
+      "failed": 0,
+      "scope": "consist canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
+      "evidence": "evidence/consist/checks.txt",
+      "receiptSha256": "5FD31CC6FBFD40C494F3ACF0364CEC04C0E0C6D91569FECFD347392FA8729356"
+    },
+    {
+      "id": "smoke",
+      "passed": 29,
+      "failed": 0,
+      "scope": "smoke canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
+      "evidence": "evidence/smoke/checks.txt",
+      "receiptSha256": "13AE366AE1F5EC4C24F4B03C1D584F5CF86C2EED72DBE5688FED531739D18F17"
+    },
+    {
+      "id": "controls",
+      "passed": 121,
+      "failed": 0,
+      "scope": "Actual adapted source regressions using explicit managed Unity/control/input stand-ins and audited native input method excerpts; original23 pure math/key-plan checks; exact DLL lifecycle with actual installed UMM/Harmony/native method targets and inactive synthetic Unity component/shared-port/authored-input/scheduler reference remapping. ActionReference fields are omitted identically by native authored input, original standalone candidate and merged component in this fixture, so their cloning remains unavailable/unverified. Live native controls, Rewired focus, physics, real reach, real locomotive prefabs, save/load and gameplay not executed.",
+      "evidence": "evidence/controls/result.json",
+      "receiptSha256": "BE27EFB9313203F9A8591E19E58300C404B761E163B0A53B11E7B1C9A5D68A48"
+    },
+    {
+      "id": "sound",
+      "passed": 14850,
+      "failed": 0,
+      "scope": "Source-linked preserved rules plus exact-DLL native Unity audio hook, ownership and lifecycle fixtures. Seeded catalogue and controlled inactive car. No game boot, discovery, audible playback or performance acceptance.",
+      "evidence": "evidence/sound/native-fixture-checks.txt",
+      "receiptSha256": "322C1D184841AB35BF7C08BC862842D163038CCB6603115929105E5BF30E8E51"
+    }
+  ],
+  "sourceHashes": [
+    {
+      "path": "src/AssemblyInfo.cs",
+      "sha256": "1D859BB5C533C93F7957DA487571CA1F0794251E9B97A408DF5E818666195418"
+    },
+    {
+      "path": "src/ControlsBridge.cs",
+      "sha256": "26710DE6F5EC64E4525B889C695F14DE8C532890E821507B724EA8D57F9AE693"
+    },
+    {
+      "path": "src/ControlsConnections.cs",
+      "sha256": "BFE3452E7F08D8F591CF80C4887FFCAEB072CFDE83FA5267047057E17A4A2355"
+    },
+    {
+      "path": "src/ControlsMath.cs",
+      "sha256": "F4627E25294282882B93437A53F17F3995DE87245736892E78A337CD43AA2CFE"
+    },
+    {
+      "path": "src/ControlsModule.cs",
+      "sha256": "B2F8D94CAD569B146E723AF53610A44C343016B58B15AC67F9CDC687B85F9B22"
+    },
+    {
+      "path": "src/ControlsRuntime.cs",
+      "sha256": "2376CE10100E79775746279F8573BA1918709FBC311BCD8E92CFC40DB5F1A0D4"
+    },
+    {
+      "path": "src/DoubleTrackSigns.cs",
+      "sha256": "65B9E26392A5DAC3A1013323BD95D50CD6436D1C7E865D048D2301B7A47A7C5A"
+    },
+    {
+      "path": "src/H6FModule.cs",
+      "sha256": "8F7493AD3D3B3F9F1D9908FC014103D151267C9C68126D61F795A480A647B6F1"
+    },
+    {
+      "path": "src/HudGuardModule.cs",
+      "sha256": "DBBADB3D942531A24E5BB724CB30D245ACDDDB173F2ABAB68B462609FCABA74D"
+    },
+    {
+      "path": "src/Main.cs",
+      "sha256": "79ED03DEC2EFBCD9745390794B95DDD3122E6D4E000E67598479550D7511A966"
+    },
+    {
+      "path": "src/SkinDamageFix.cs",
+      "sha256": "EC9A96AEDB9E4F52EAAADC24E0636E8BCDE0E0A25D186B1087FAC285C022D38B"
+    },
+    {
+      "path": "src/SkinRegistrationFix.cs",
+      "sha256": "9DD83E78C8557D83A6C4D6AAF9D80A21F5170C4F17E90E645E792FE2D6BDB9DA"
+    },
+    {
+      "path": "src/SmokeColorFix.cs",
+      "sha256": "D7D422A661F20EC7F68CEE81B0953F848E3DD08B886C79FF99EE6E62FF436BEA"
+    },
+    {
+      "path": "src/SmokeFixModule.cs",
+      "sha256": "BFAEF29C8D35F1052CF170D2B4FDC50C1CFB7D9B097294A01A7CCF25EEC0707E"
+    },
+    {
+      "path": "src/SoundDirectAudio.cs",
+      "sha256": "8F579C2AC9AE107BAC2064C55DB26C0E632DD49638FBEA92F4CDEADEC7BC9BDE"
+    },
+    {
+      "path": "src/SoundEngine.cs",
+      "sha256": "BE99A89B71DDDC9269AA32BB937409C1B5D314942DD88A4C9FBE127B8DE20A61"
+    },
+    {
+      "path": "src/SoundPitchModule.cs",
+      "sha256": "4CCB202D768360999878928B782291E778B4E1886A51ABEA534559C213B01347"
+    },
+    {
+      "path": "src/SoundPitchRules.cs",
+      "sha256": "F3F3E65B70A495728E4C2362D2F520A3D3159A548645A6D6CC795E7380CFE7D4"
+    },
+    {
+      "path": "src/SoundStockAudio.cs",
+      "sha256": "8E5997A74927BC7305A5D23A3891F0641EE9119780CDBD00C8552FE6F117C1FD"
+    }
+  ],
+  "reproduced": "Skin Manager scorch overwrite; six embedded skin configs rejected before controlled CCL registration and automatically discovered after it with the fix; native DoubleTrack sign transform corrections.",
+  "preserved": [
+    "Native exploded flag and thresholds",
+    "Normal healthy paint application",
+    "Changed-while-disabled theme selection",
+    "Independent vehicle damage flags",
+    "Other Harmony patch owners",
+    "Sign height and facing",
+    "Unlisted objects",
+    "Desired options across dependencies/conflicts",
+    "Independent module lifecycle"
+  ],
+  "remaining": [
+    "Full clean UMM/game boot with real embedded CCL pack and no companion",
+    "Actual CCL bundle import and CCL 3.1.11 runtime acceptance",
+    "H6F first import/native registry/spawn in actual startup order",
+    "Real HUD force/power/slip and Unity speed acquisition",
+    "Rendered native smoke appearance",
+    "Live CCL controls including both Leader cabs/Rewired/focus/physics and releases",
+    "Listening acceptance of steam/non-steam sound, pooling, custom audio/cab exclusions and performance",
+    "Cold migration from existing standalone fixes with original settings preserved",
+    "External 4K skin transition and SM-disabled gameplay",
+    "DoubleTrack world-generation coroutine and real map traversal",
+    "Physical explosion and complete TrainCarExplosion orchestration",
+    "Real vehicle interior/exterior streaming",
+    "SaveManager save/reload",
+    "5AT-specific actual appearance",
+    "Live repair UI and GUI"
+  ],
+  "historicalAttempts": "Initial licence/fixture-setup failures are retained separately; the final native fixture passes. Original 5AT project fixture was not rerun with this patch.",
+  "installed": false,
+  "gameLaunched": false,
+  "publiclyUploaded": false
+}

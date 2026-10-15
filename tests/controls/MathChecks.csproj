@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems><OutputPath>bin/original/</OutputPath></PropertyGroup>
+  <ItemGroup><Compile Include="Program.cs" /><Compile Include="../../src/ControlsMath.cs" Link="ControlsMath.cs" /></ItemGroup>
+</Project>

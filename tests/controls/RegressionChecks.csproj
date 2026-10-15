@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems><GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AssemblyName>DadsToolboxControlsRegression</AssemblyName><OutputPath>bin/regression/</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="RegressionStubs.cs" /><Compile Include="RegressionSwitchStub.cs" /><Compile Include="RegressionProgram.cs" />
+    <Compile Include="../../src/ControlsRuntime.cs" Link="ControlsRuntime.cs" />
+    <Compile Include="../../src/ControlsConnections.cs" Link="ControlsConnections.cs" />
+    <Compile Include="../../src/ControlsMath.cs" Link="ControlsMath.cs" />
+    <Compile Include="../../src/ControlsBridge.cs" Link="ControlsBridge.cs" />
+    <Compile Include="C:/Users/james/Desktop/Derail Valley Mods/Mods (code)/DVToolbox_Audit_2026-10-13/controls/native/DV.KeyboardInput.MouseScrollKeyboardInput.cs" Link="NativeMouseScrollKeyboardInput.cs" />
+    <Compile Include="C:/Users/james/Desktop/Derail Valley Mods/Mods (code)/DVToolbox_Audit_2026-10-13/controls/native/DV.KeyboardInput.ToggleValueKeyboardInput.cs" Link="NativeToggleValueKeyboardInput.cs" />
+  </ItemGroup>
+</Project>
