@@ -34,7 +34,7 @@ foreach ($taskReceipt in @($taskNative,$taskSigns,$taskRegistration)) {
     if ((Get-FileHash -LiteralPath $taskReceipt.verdict).Hash -ne $taskReceipt.verdictSha256) { throw 'Native verdict changed after receipt.' }
 }
 $taskAdditional = @()
-foreach ($taskSuite in @('combined','hud','consist','smoke','controls','sound')) {
+foreach ($taskSuite in @('combined','hud','smoke','controls','sound')) {
     $taskReceiptPath = Join-Path $PSScriptRoot ('evidence\' + $taskSuite + '\receipt.json')
     $taskReceipt = Get-Content -Raw -LiteralPath $taskReceiptPath | ConvertFrom-Json
     if ($taskReceipt.toolbox.Hash -ne $taskHash -or $taskReceipt.exitCode -ne 0 -or
@@ -87,17 +87,16 @@ foreach ($taskSuite in @('combined','hud','consist','smoke','controls','sound'))
 $taskAdditionalPassed = 0
 foreach ($taskCheck in $taskAdditional) { $taskAdditionalPassed += [int]$taskCheck['passed'] }
 $taskValidation = [ordered]@{
-    date = '2026-10-15'; package = 'DadsToolbox'; version = $taskInfo.Version; status = 'development candidate; isolated integration verified; live-world acceptance pending'
+    date = '2026-10-16'; package = 'DadsToolbox'; version = $taskInfo.Version; status = 'development candidate; isolated integration verified; live-world acceptance pending'
     binarySha256 = $taskHash; passed = $taskManagedPassed + $taskNativePassed + $taskSignsPassed + $taskRegistrationPassed + $taskAdditionalPassed; failed = 0
-    modules = @('SkinDamageFix','SkinRegistrationFix','DoubleTrackSigns','HudGuard','ConsistFix','CclControlFix','LocoSoundPitch','SmokeFix')
-    features = @('HUD Guard','Consist Fix (H6F)','CCL Control Fix','Loco Sound Pitch','Skin Manager Fix','CCL Smoke Fix','DoubleTrack sign clearance')
+    modules = @('SkinDamageFix','SkinRegistrationFix','DoubleTrackSigns','HudGuard','CclControlFix','LocoSoundPitch','SmokeFix')
+    features = @('HUD Guard','CCL Control Fix','Loco Sound Pitch','Skin Manager Fix','CCL Smoke Fix','DoubleTrack sign clearance')
     supportedOptionalDependencies = @([ordered]@{
         id = 'SkinManagerMod'; ummVersion = '4.4.1'; assemblyVersion = '4.2.0.0'
         sha256 = ($taskNative.inputs | Where-Object { $_.Path -like '*\SkinManagerMod\SkinManagerMod.dll' }).Hash
     }, [ordered]@{ id = 'DoubleTrack'; ummVersion = '2.1.1'; sha256 = ($taskSigns.inputs | Where-Object { $_.Path -like '*\DoubleTrack\DoubleTrack.dll' }).Hash },
-    [ordered]@{ id = 'DVCustomCarLoader'; ummVersion = '3.1.9'; requiredFor = 'Embedded skin registration, CCL controls and H6F consist repair'; sha256 = ($taskRegistration.inputs | Where-Object { $_.Path -like '*\DVCustomCarLoader\CCL.Importer.dll' }).Hash },
-    [ordered]@{ id = 'HeadsUpDisplay_994'; ummVersion = '1.1.2'; requiredFor = 'HUD Guard' },
-    [ordered]@{ id = 'em_h6f_main'; ummVersion = '1.0.0'; dataOnly = $true; requiredFor = 'H6F consist repair only' })
+    [ordered]@{ id = 'DVCustomCarLoader'; ummVersion = '3.1.9'; requiredFor = 'Embedded skin registration and CCL controls'; sha256 = ($taskRegistration.inputs | Where-Object { $_.Path -like '*\DVCustomCarLoader\CCL.Importer.dll' }).Hash },
+    [ordered]@{ id = 'HeadsUpDisplay_994'; ummVersion = '1.1.2'; requiredFor = 'HUD Guard' })
     checks = @(
         [ordered]@{ passed = $taskManagedPassed; failed = 0; scope = $taskManaged.scope; evidence = 'evidence/managed/results/checks.txt' },
         [ordered]@{ passed = $taskNativePassed; failed = 0; unityVersion = $taskNative.unity; scope = $taskNative.scope; evidence = 'evidence/skin-damage/native-fixture-checks.txt' },
@@ -107,7 +106,7 @@ $taskValidation = [ordered]@{
     sourceHashes = @($taskBuild.sources | ForEach-Object { [ordered]@{ path = 'src/' + [IO.Path]::GetFileName($_.Path); sha256 = $_.Hash } })
     reproduced = 'Skin Manager scorch overwrite; six embedded skin configs rejected before controlled CCL registration and automatically discovered after it with the fix; native DoubleTrack sign transform corrections.'
     preserved = @('Native exploded flag and thresholds', 'Normal healthy paint application', 'Changed-while-disabled theme selection', 'Independent vehicle damage flags', 'Other Harmony patch owners', 'Sign height and facing', 'Unlisted objects', 'Desired options across dependencies/conflicts', 'Independent module lifecycle')
-    remaining = @('Full clean UMM/game boot with real embedded CCL pack and no companion', 'Actual CCL bundle import and CCL 3.1.11 runtime acceptance', 'H6F first import/native registry/spawn in actual startup order', 'Real HUD force/power/slip and Unity speed acquisition', 'Rendered native smoke appearance', 'Live CCL controls including both Leader cabs/Rewired/focus/physics and releases', 'Listening acceptance of steam/non-steam sound, pooling, custom audio/cab exclusions and performance', 'Cold migration from existing standalone fixes with original settings preserved', 'External 4K skin transition and SM-disabled gameplay', 'DoubleTrack world-generation coroutine and real map traversal', 'Physical explosion and complete TrainCarExplosion orchestration', 'Real vehicle interior/exterior streaming', 'SaveManager save/reload', '5AT-specific actual appearance', 'Live repair UI and GUI')
+    remaining = @('Full clean UMM/game boot with real embedded CCL pack and no companion', 'Actual CCL bundle import and CCL 3.1.11 runtime acceptance', 'Real HUD force/power/slip and Unity speed acquisition', 'Rendered native smoke appearance', 'Live CCL controls including both Leader cabs/Rewired/focus/physics and releases', 'Listening acceptance of steam/non-steam sound, pooling, custom audio/cab exclusions and performance', 'Cold migration from existing standalone fixes with original settings preserved', 'External 4K skin transition and SM-disabled gameplay', 'DoubleTrack world-generation coroutine and real map traversal', 'Physical explosion and complete TrainCarExplosion orchestration', 'Real vehicle interior/exterior streaming', 'SaveManager save/reload', '5AT-specific actual appearance', 'Live repair UI and GUI')
     historicalAttempts = 'Initial licence/fixture-setup failures are retained separately; the final native fixture passes. Original 5AT project fixture was not rerun with this patch.'
     installed = $false; gameLaunched = $false; publiclyUploaded = $false
 }
@@ -122,3 +121,4 @@ if ($taskValidation['passed'] -ne $taskSummedPassed -or $taskValidation['failed'
 }
 $taskValidation | ConvertTo-Json -Depth 7 | Set-Content -LiteralPath (Join-Path $PSScriptRoot 'evidence\validation.json') -Encoding utf8
 Write-Output "Recorded $($taskValidation.passed) passing checks for DLL $taskHash"
+

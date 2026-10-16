@@ -226,7 +226,8 @@ public static class NativeSignClearanceChecks
             Check(Active && SkinActive && Near(parentOff.transform.position.x,-2),"parent re-enable restores both independently selected modules");
 
             var blocked=Sign(1); Signs(blocked);
-            var standaloneAssembly=Assembly.LoadFrom(Path.Combine(game,"Mods/DoubleTrackSignClearance/DoubleTrackSignClearance.dll"));
+            var legacyMods=Environment.GetEnvironmentVariable("TOOLBOX_LEGACY_MODS") ?? Path.Combine(game,"Mods");
+            var standaloneAssembly=Assembly.LoadFrom(Path.Combine(legacyMods,"DoubleTrackSignClearance/DoubleTrackSignClearance.dll"));
             helper=Entry("DoubleTrackSignClearance",new Version(1,0,0),standaloneAssembly,false); entries.Add(helper);
             Tick(25.5f);
             Check(!Active && SkinActive && Near(blocked.transform.position.x,1) && Status.Contains("restart"),"loaded inactive standalone stops actual native sign scanning without disturbing skin protection");

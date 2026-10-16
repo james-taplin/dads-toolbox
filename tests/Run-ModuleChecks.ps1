@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('hud','consist','smoke')][string]$Kind,
+    [ValidateSet('hud','smoke')][string]$Kind,
     [string]$GamePath='B:\SteamLibrary\steamapps\common\Derail Valley',
     [string]$ToolboxDll
 )
@@ -45,7 +45,11 @@ if($Kind -eq 'hud'){
 }
 $taskInputs=@($taskSources)+@($PSCommandPath)+@($taskRefs)
 Add-Content -LiteralPath $taskLog -Value "RESULT: $taskPassed passed, $taskFailed failed." -Encoding utf8
-if($Kind -eq 'hud'){$taskInputs+=Join-Path $taskOutput 'cold.txt'}
+if($Kind -eq 'hud'){
+    $taskInputs+=Join-Path $taskOutput 'cold.txt'
+    $taskLegacyRoot=if($env:TOOLBOX_LEGACY_MODS){$env:TOOLBOX_LEGACY_MODS}else{Join-Path $GamePath 'Mods'}
+    $taskInputs+=Join-Path $taskLegacyRoot 'DV_RSCompatibility\DVRollingStockCompatibility.dll'
+}
 [ordered]@{
     toolbox=Get-FileHash -LiteralPath $ToolboxDll | Select-Object Path,Hash
     inputs=@($taskInputs | ForEach-Object {Get-FileHash -LiteralPath $_ | Select-Object Path,Hash})
@@ -54,3 +58,4 @@ if($Kind -eq 'hud'){$taskInputs+=Join-Path $taskOutput 'cold.txt'}
     scope="$Kind canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation."
 } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $taskOutput 'receipt.json') -Encoding utf8
 if($taskExit -ne 0 -or $taskFailed -gt 0){throw "$Kind checks failed"}
+

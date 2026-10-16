@@ -152,7 +152,8 @@ public static class IntegrationTests
             duplicate.Unpatch(target,HarmonyPatchType.Finalizer,duplicate.Id);module.Refresh();
             Check("Conflict removal allows explicit recovery",module.State==HudGuardState.Enabled && AllOwned(true));
 
-            Assembly old=Assembly.LoadFrom(Path.Combine(NativeHud.GameRoot,"Mods","DV_RSCompatibility","DVRollingStockCompatibility.dll"));
+            string legacyMods=Environment.GetEnvironmentVariable("TOOLBOX_LEGACY_MODS") ?? Path.Combine(NativeHud.GameRoot,"Mods");
+            Assembly old=Assembly.LoadFrom(Path.Combine(legacyMods,"DV_RSCompatibility","DVRollingStockCompatibility.dll"));
             old.GetType("DVRollingStockCompatibility.HudLocoProviderFix",true).GetMethod("Install",BindingFlags.NonPublic|BindingFlags.Static).Invoke(null,new object[]{legacy});
             legacy.Patch(sentinel,postfix:new HarmonyMethod(typeof(NativeHud).GetMethod("SentinelPostfix")));
             module.Refresh();

@@ -1,6 +1,7 @@
 param([string]$ToolboxDll, [string]$GamePath, [string]$EvidencePath,
       [ValidateSet('SkinDamage','SignClearance','SkinRegistration')][string]$Kind)
 $ErrorActionPreference = 'Stop'
+$taskLegacyRoot = if ($env:TOOLBOX_LEGACY_MODS) { $env:TOOLBOX_LEGACY_MODS } else { Join-Path $GamePath 'Mods' }
 $taskRoot = Split-Path -Parent $PSScriptRoot
 $taskVerdict = Join-Path $EvidencePath 'native-fixture-checks.txt'
 $taskText = Get-Content -Raw -LiteralPath $taskVerdict
@@ -18,7 +19,7 @@ $taskInputs = @($ToolboxDll,
     (Join-Path $PSScriptRoot 'UnityFixture\Packages\manifest.json'))
 if ($Kind -eq 'SignClearance') {
     $taskInputs += @((Join-Path $GamePath 'Mods\DoubleTrack\DoubleTrack.dll'),
-        (Join-Path $GamePath 'Mods\DoubleTrackSignClearance\DoubleTrackSignClearance.dll'),
+        (Join-Path $taskLegacyRoot 'DoubleTrackSignClearance\DoubleTrackSignClearance.dll'),
         (Join-Path $PSScriptRoot 'UnityFixture\Assets\Editor\NativeSignClearanceChecks.cs'),
         (Join-Path $PSScriptRoot 'Run-NativeSignClearanceFixture.ps1'))
     $taskInputs += @('DV.RailTrack.dll','DV.PointSet.dll','DV.OriginShiftInfo.dll','DV.Utils.dll','net.smkd.vector3d.dll') |
@@ -40,7 +41,7 @@ if ($Kind -eq 'SignClearance') {
     $taskScope = 'Installed native material handler and Skin Manager callback with the compiled Toolbox Harmony prefix in isolated Unity objects. Manually constructed explosion flag/callback transitions; no physical explosion, streaming or SaveManager.'
 }
 [ordered]@{
-    date = '2026-10-15'; unity = $taskUnity; checks = $taskChecks; failures = 0
+    date = '2026-10-16'; unity = $taskUnity; checks = $taskChecks; failures = 0
     verdict = $taskVerdict; verdictSha256 = (Get-FileHash -LiteralPath $taskVerdict).Hash
     inputs = @($taskInputs | ForEach-Object { Get-FileHash -LiteralPath $_ | Select-Object Path,Hash })
     scope = $taskScope

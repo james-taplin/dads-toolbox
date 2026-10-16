@@ -17,11 +17,11 @@ public static class CombinedChecks
     static string managed, toolbox, output;
     static int passed, failed;
     static readonly List<string> report = new List<string>();
-    static readonly string[] Flags = { "SkinDamageFix", "SkinRegistrationFix", "DoubleTrackSignClearance", "HudGuard", "ConsistFix", "CclControlFix", "LocoSoundPitch", "SmokeFix" };
-    static readonly string[] ModuleFields = { "skinDamage", "skinRegistration", "signs", "hud", "consist", "controls", "sound", "smoke" };
+    static readonly string[] Flags = { "SkinDamageFix", "SkinRegistrationFix", "DoubleTrackSignClearance", "HudGuard", "CclControlFix", "LocoSoundPitch", "SmokeFix" };
+    static readonly string[] ModuleFields = { "skinDamage", "skinRegistration", "signs", "hud", "controls", "sound", "smoke" };
     static readonly string[] Owners = {
         "jimtaplin.derailvalley.toolbox.skindamage", "jimtaplin.derailvalley.toolbox.skinregistration",
-        "jimtaplin.derailvalley.toolbox.hudguard", "jimtaplin.derailvalley.toolbox.h6f",
+        "jimtaplin.derailvalley.toolbox.hudguard",
         "jimtaplin.derailvalley.toolbox.cclcontrols", "jimtaplin.derailvalley.toolbox.locosoundpitch",
         "jimtaplin.derailvalley.toolbox.smoke" };
     static readonly Dictionary<string, int> CleanupCalls = new Dictionary<string, int>();
@@ -55,6 +55,15 @@ public static class CombinedChecks
         string[] forbidden = { "SkinManagerMod", "CCL.Importer", "CCL.Types", "DoubleTrack", "HeadsUpDisplay", "SteamSizePitch", "DVCCLControlFix", "CCLSmokeFix", "HUDGuard", "H6FTrainsetFix" };
         Check(!asm.GetReferencedAssemblies().Any(a => forbidden.Contains(a.Name)), "optional mod assemblies are not hard assembly references");
         Check(Owners.Distinct().Count() == Owners.Length, "all patching features reserve distinct owner IDs");
+        Check(asm.GetType("DadsToolbox.H6F.H6FModule") == null, "retired H6F module is absent from shipped DLL");
+        Check(typeof(ToolboxSettings).GetField("ConsistFix") == null && typeof(DadsToolbox.Main).GetField("consist", BF) == null, "retired setting and parent instance are absent");
+        Check(!asm.GetTypes().Any(t => t.Namespace == "DadsToolbox.H6F"), "no H6F repair types remain in the assembly");
+        var legacyPath = Path.Combine(parent.Path, "Settings.xml");
+        File.WriteAllText(legacyPath, "<ToolboxSettings><ConsistFix>true</ConsistFix><HudGuard>false</HudGuard><CclControlFix>false</CclControlFix><SmokeFix>false</SmokeFix><Sound><Strength>6.4955945</Strength></Sound><SoundSettingsMigrationComplete>true</SoundSettingsMigrationComplete></ToolboxSettings>");
+        var legacySettings = UnityModManager.ModSettings.Load<ToolboxSettings>(parent);
+        Check(!legacySettings.HudGuard && !legacySettings.CclControlFix && !legacySettings.SmokeFix && legacySettings.Sound.Strength == 6.4955945f && legacySettings.SoundSettingsMigrationComplete, "0.4.0 XML ignores removed ConsistFix and preserves other preferences");
+        legacySettings.Save(parent);
+        Check(!File.ReadAllText(legacyPath).Contains("<ConsistFix>"), "saving migrated settings removes the obsolete XML option");
         foreach (string flag in Flags) Check((bool)typeof(ToolboxSettings).GetField(flag).GetValue(new ToolboxSettings()), flag + " has its independent enabled default");
 
         for (int mask = 0; mask < 1 << Flags.Length; mask++)
@@ -104,7 +113,7 @@ public static class CombinedChecks
                 Set(current, flag, false);
                 parent.OnSaveGUI(parent);
                 var reloaded = UnityModManager.ModSettings.Load<ToolboxSettings>(parent);
-                Check(!GetFlag(reloaded, flag) && Flags.Where(f => f != flag).All(f => GetFlag(reloaded, f)), "turning off " + flag + " preserves the other seven options");
+                Check(!GetFlag(reloaded, flag) && Flags.Where(f => f != flag).All(f => GetFlag(reloaded, f)), "turning off " + flag + " preserves the other six options");
                 Set(current, flag, true);
             }
             foreach (string flag in Flags) Set(current, flag, false);
@@ -144,39 +153,38 @@ public static class CombinedChecks
         {
             CleanupCalls.Clear();
             Check(!parent.OnUnload(parent), "failed final HUD cleanup rejects whole parent unload");
-            Check(CleanupCalls.Count == 8 && CleanupCalls.Values.All(n => n == 1), "failed final cleanup still attempts every other module finalizer");
+            Check(CleanupCalls.Count == ModuleFields.Length && CleanupCalls.Values.All(n => n == 1), "failed final cleanup still attempts every other module finalizer");
             Check((bool)ParentField("finalShutdownStarted") && !(bool)ParentField("enabled") && ParentSubscriptions() == 0, "failed final unload latches suspended parent and removes dependency listener");
             Check(!parent.OnToggle(parent, true), "partially finalized parent refuses reactivation");
             typeof(DadsToolbox.Main).GetMethod("ApplySettings", BF).Invoke(null, null);
             parent.OnUpdate(parent, 0);
             Check(ToolboxPatchCount() == 0 && !(bool)ParentField("enabled"), "settings/update cannot resume a partially finalized lifetime");
             CleanupCalls.Clear();
-            Check(!parent.OnUnload(parent) && CleanupCalls.Count == 8 && CleanupCalls.Values.All(n => n == 1), "retrying final unload reattempts all cleanups and preserves failure");
+            Check(!parent.OnUnload(parent) && CleanupCalls.Count == ModuleFields.Length && CleanupCalls.Values.All(n => n == 1), "retrying final unload reattempts all cleanups and preserves failure");
         }
         finally { fixture.UnpatchAll(fixture.Id); }
         Check(parent.OnUnload(parent) && !(bool)ParentField("loaded"), "cleanup retry completes after the failing boundary recovers");
         Check(DadsToolbox.Main.Load(parent) && !(bool)ParentField("finalShutdownStarted"), "successful new Load clears final shutdown latch");
         try
         {
-            Check(ModuleFields.All(f => !ReferenceEquals(prior[f], ParentField(f))) && ParentSubscriptions() == 1, "recovered parent creates eight fresh lifetimes with one listener");
+            Check(ModuleFields.All(f => !ReferenceEquals(prior[f], ParentField(f))) && ParentSubscriptions() == 1, "recovered parent creates seven fresh lifetimes with one listener");
             Check(parent.OnToggle(parent, true) && ToolboxPatchCount() == 0, "recovered lifetime can reactivate with saved off preferences");
         }
         finally { parent.OnUnload(parent); }
     }
     static void ColdDependencyChecks(UnityModManager.ModEntry parent)
     {
-        SettingsFor(255).Save(parent);
+        SettingsFor((1 << Flags.Length) - 1).Save(parent);
         Check(DadsToolbox.Main.Load(parent), "default-selected parent starts with every optional dependency absent");
         try
         {
             Check(ToolboxPatchCount() == 0 && Flags.All(f => GetFlag(ParentField("settings"), f)), "missing optional dependencies leave all choices selected and install no patches");
             Check(GetProperty(ParentField("hud"), "State").ToString() == "WaitingForHud", "HUD Guard waits for absent HUD");
-            Check(GetProperty(ParentField("consist"), "State").ToString() == "WaitingForH6F" && Get(ParentField("consist"), "harmony") == null && !(bool)Get(ParentField("consist"), "listening"), "absent H6F does not resolve CCL, create a Harmony owner or subscribe an activation listener");
             Check(!(bool)GetProperty(ParentField("controls"), "Active") && ((string)GetProperty(ParentField("controls"), "Status")).Contains("CCL"), "CCL controls wait for optional CCL");
             Check(!(bool)GetProperty(ParentField("sound"), "Active") && ((string)GetProperty(ParentField("sound"), "Status")).Contains("CCL"), "Loco Sound Pitch waits for optional CCL without touching native audio");
             Check(!(bool)GetProperty(ParentField("smoke"), "Active") && ((string)ParentField("smokeStatus")).Contains("CCL"), "CCL smoke waits for optional CCL");
-            Check(ParentSubscriptions() == 1, "ineligible H6F adds no extra dependency listener");
-            foreach (string id in new[] { "DVCustomCarLoader", "HeadsUpDisplay_994", "em_h6f_main", "SkinManagerMod", "DoubleTrack" })
+            Check(ParentSubscriptions() == 1, "only the parent owns the dependency listener");
+            foreach (string id in new[] { "DVCustomCarLoader", "HeadsUpDisplay_994", "SkinManagerMod", "DoubleTrack" })
             {
                 var mod = Entry(id, Path.Combine(output, "inactive", id)); mod.Enabled = true;
                 UnityModManager.modEntries.Add(mod);
@@ -197,7 +205,7 @@ public static class CombinedChecks
         var soundStandalone = Entry("SteamSizePitch", Path.Combine(output, "conflicts", "SteamSizePitch"));
         controlStandalone.Enabled = true; soundStandalone.Enabled = true;
         UnityModManager.modEntries.Add(controlStandalone); UnityModManager.modEntries.Add(soundStandalone);
-        SettingsFor(255).Save(parent);
+        SettingsFor((1 << Flags.Length) - 1).Save(parent);
         Check(DadsToolbox.Main.Load(parent), "standalone conflicts do not prevent whole parent startup");
         try
         {
@@ -225,8 +233,8 @@ public static class CombinedChecks
             fixture.Patch(typeof(DadsToolbox.Main).GetMethod("Cleanup", BF), prefix: new HarmonyMethod(typeof(CombinedChecks).GetMethod("ObserveCleanup", BF)));
             bool result = parent.OnToggle(parent, false);
             Check(!result, "parent propagates a failed first-module cleanup result");
-            var cleanupNames = new[] { "HUD Guard", "Consist Fix", "CCL Control Fix", "Loco Sound Pitch", "CCL Smoke Fix", "Skin damage", "Skin registration", "DoubleTrack signs" };
-            Check(cleanupNames.All(f => CleanupCalls.ContainsKey(f) && CleanupCalls[f] == 1), "failed HUD cleanup still attempts all other seven module cleanups exactly once");
+            var cleanupNames = new[] { "HUD Guard", "CCL Control Fix", "Loco Sound Pitch", "CCL Smoke Fix", "Skin damage", "Skin registration", "DoubleTrack signs" };
+            Check(cleanupNames.All(f => CleanupCalls.ContainsKey(f) && CleanupCalls[f] == 1), "failed HUD cleanup still attempts all other six module cleanups exactly once");
             Check(!(bool)ParentField("enabled") && ToolboxPatchCount() == 0, "failed disable remains internally suspended instead of silently resuming work");
             Check(Flags.All(f => !GetFlag(ParentField("settings"), f)), "cleanup failure preserves every saved preference");
             Check(ForeignMarker() == 17 && Harmony.GetPatchInfo(marker).Owners.Contains("fixture.dadstoolbox.combined.foreign"), "failed Toolbox cleanup preserves an unrelated Harmony owner");
@@ -308,10 +316,11 @@ public static class CombinedChecks
     {
         Directory.CreateDirectory(path);
         var e = (UnityModManager.ModEntry)FormatterServices.GetUninitializedObject(typeof(UnityModManager.ModEntry));
-        Set(e, "Info", new UnityModManager.ModInfo { Id = id, Version = "0.4.0", AssemblyName = "DadsToolbox.dll" });
+        Set(e, "Info", new UnityModManager.ModInfo { Id = id, Version = "0.4.1", AssemblyName = "DadsToolbox.dll" });
         Set(e, "Path", path); Set(e, "Logger", new UnityModManager.ModEntry.ModLogger("combined-" + id));
-        Set(e, "Version", new Version(0, 4, 0)); Set(e, "mAssembly", typeof(DadsToolbox.Main).Assembly); Set(e, "mStarted", true); Set(e, "mActive", false);
+        Set(e, "Version", new Version(0, 4, 1)); Set(e, "mAssembly", typeof(DadsToolbox.Main).Assembly); Set(e, "mStarted", true); Set(e, "mActive", false);
         return e;
     }
     static void Check(bool result, string text) { string line = (result ? "PASS: " : "FAIL: ") + text; report.Add(line); Console.WriteLine(line); if (result) passed++; else failed++; }
 }
+

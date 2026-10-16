@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityModManagerNet;
 using CCLSmokeFix;
 using DadsToolbox.HudGuard;
-using DadsToolbox.H6F;
 using DadsToolbox.CclControls;
 using DadsToolbox.LocoSound;
 
@@ -15,7 +14,6 @@ namespace DadsToolbox
     public sealed class ToolboxSettings : UnityModManager.ModSettings
     {
         public bool HudGuard = true;
-        public bool ConsistFix = true;
         public bool CclControlFix = true;
         public bool LocoSoundPitch = true;
         public bool SmokeFix = true;
@@ -44,7 +42,6 @@ namespace DadsToolbox
         private static SkinRegistrationFix skinRegistration;
         private static DoubleTrackSigns signs;
         private static HudGuardModule hud;
-        private static H6FModule consist;
         private static SmokeFixModule smoke;
         private static ControlsModule controls;
         private static SoundPitchModule sound;
@@ -65,7 +62,6 @@ namespace DadsToolbox
             skinRegistration = new SkinRegistrationFix();
             signs = new DoubleTrackSigns(settings.SignClearance, text => Log("DoubleTrack signs", text));
             hud = new HudGuardModule(text => Log("HUD Guard", text));
-            consist = new H6FModule(text => Log("Consist Fix", text));
             smoke = new SmokeFixModule();
             controls = new ControlsModule(text => Log("CCL Control Fix", text));
             sound = new SoundPitchModule(settings.Sound, text => Log("Loco Sound Pitch", text),
@@ -74,8 +70,6 @@ namespace DadsToolbox
             entry.OnUnload = OnUnload; entry.OnUpdate = OnUpdate;
             UnityModManager.toggleModsListen -= OnDependencyToggle;
             UnityModManager.toggleModsListen += OnDependencyToggle;
-            // UMM's post-Load activation happens later. Arm Consist Fix now,
-            // before subsequent data-only packs begin their first native import.
             enabled = true; loaded = true;
             ApplySettings();
             return true;
@@ -84,7 +78,6 @@ namespace DadsToolbox
         private static void ApplySettings()
         {
             if (!loaded || finalShutdownStarted) return;
-            Run("Consist Fix", () => consist.Configure(settings.ConsistFix, enabled));
             Run("HUD Guard", () => hud.Configure(settings.HudGuard, enabled));
             Run("CCL Control Fix", () => controls.Configure(settings.CclControlFix, enabled));
             Run("Loco Sound Pitch", () => sound.Configure(settings.LocoSoundPitch, enabled));
@@ -171,8 +164,6 @@ namespace DadsToolbox
                 Run("DoubleTrack signs", () => signs.Refresh());
             if (id == "HeadsUpDisplay_994" || id == "DVRollingStockCompatibility")
                 Run("HUD Guard", () => hud.Refresh());
-            if (id == "em_h6f_main" || id == "DVCustomCarLoader" || id == "DVRollingStockCompatibility")
-                Run("Consist Fix", () => consist.Refresh());
             if (id == "DVCustomCarLoader" || id == "DVCCLControlFix")
                 Run("CCL Control Fix", () => controls.Refresh());
             if (id == "SteamSizePitch" || id == "ZSounds" || id == "DVCustomCarLoader")
@@ -198,7 +189,6 @@ namespace DadsToolbox
             // &= evaluates every cleanup even if an earlier module failed.
             bool ok = true;
             ok &= Cleanup("HUD Guard", () => final ? hud.Unload() : hud.Stop());
-            ok &= Cleanup("Consist Fix", () => final ? consist.Unload() : consist.Stop());
             ok &= Cleanup("CCL Control Fix", () => final ? controls.Unload() : controls.Stop());
             ok &= Cleanup("Loco Sound Pitch", () => final ? sound.Unload() : sound.Stop());
             ok &= Cleanup("CCL Smoke Fix", () => smoke.Stop());
@@ -226,7 +216,6 @@ namespace DadsToolbox
         {
             if (!loaded || finalShutdownStarted) return;
             Run("HUD Guard", () => { hud.Configure(settings.HudGuard, enabled); hud.Tick(); });
-            Run("Consist Fix", () => { consist.Configure(settings.ConsistFix, enabled); consist.Tick(); });
             Run("CCL Control Fix", () => { controls.Configure(settings.CclControlFix, enabled); controls.Tick(); });
             if (enabled)
             {
@@ -239,8 +228,6 @@ namespace DadsToolbox
         {
             GUILayout.Label("Dad's Toolbox — development candidate");
             Option(ref settings.HudGuard, "HUD Guard", hud.Status);
-            Option(ref settings.ConsistFix, "Consist Fix", consist.Status);
-            GUILayout.Label("Currently repairs the H6F trainset entry only. Corrected runtime metadata needs restart to undo.");
             Option(ref settings.CclControlFix, "CCL Control Fix", controls.Status);
             GUILayout.Label("Existing control/prefab changes require restart for complete restoration.");
             Option(ref settings.LocoSoundPitch, "Loco Sound Pitch", sound.Status);
@@ -271,7 +258,6 @@ namespace DadsToolbox
             {
                 faults.Clear();
                 Run("HUD Guard", () => hud.Refresh());
-                Run("Consist Fix", () => consist.Refresh());
                 Run("CCL Control Fix", () => controls.Refresh());
                 Run("Loco Sound Pitch", () => sound.Refresh());
                 Run("DoubleTrack signs", () => signs.Refresh());
@@ -352,7 +338,6 @@ namespace DadsToolbox
                     switch (name)
                     {
                         case "HUD Guard": return hud.Stop();
-                        case "Consist Fix": return consist.Stop();
                         case "CCL Control Fix": return controls.Stop();
                         case "Loco Sound Pitch": return sound.Stop();
                         case "CCL Smoke Fix": return smoke.Stop();

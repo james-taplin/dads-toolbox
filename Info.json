@@ -2,9 +2,10 @@
   "Id": "DadsToolbox",
   "DisplayName": "Dad's Toolbox (development)",
   "Author": "Jim Taplin",
-  "Version": "0.4.0",
+  "Version": "0.4.1",
   "ManagerVersion": "0.27.3",
   "AssemblyName": "DadsToolbox.dll",
   "EntryMethod": "DadsToolbox.Main.Load",
   "LoadAfter": ["SkinManagerMod", "DVCustomCarLoader", "DoubleTrack", "DoubleTrackSignClearance"]
 }
+

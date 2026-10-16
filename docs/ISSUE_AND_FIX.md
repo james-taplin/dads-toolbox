@@ -1,10 +1,10 @@
-# Combined Toolbox 0.4.0
+# Combined Toolbox 0.4.1
 
-The current candidate includes HUD Guard, Consist Fix (currently H6F), CCL Control Fix, Loco Sound Pitch, both Skin Manager corrections, CCL Smoke Fix and DoubleTrack signs. The following skin/sign investigation sections retain their original evidence and historical counts; current exact-binary aggregate results are in validation.json.
+The current candidate includes HUD Guard, CCL Control Fix, Loco Sound Pitch, both Skin Manager corrections, CCL Smoke Fix and DoubleTrack signs. The following skin/sign investigation sections retain their original evidence and historical counts; current exact-binary aggregate results are in validation.json.
 
 HUD Guard preserves native valid force/power/slip, turning selected reader NRE into native unavailable results; other exceptions still propagate. It remains a broad NRE boundary and can conceal a genuine null bug inside a supported reader.
 
-Consist Fix changes only the exact H6F car/variant's malformed h6f_main trainset reference to em_h6f_main before native CCL registration, preserving tenders/order/unrelated entries. Startup order matters; late activation never forces a registry rebuild.
+Consist Fix (H6F) was removed completely in 0.4.1-dev following the upstream repair. Older settings ignore the obsolete option and drop it on save. HUD Guard remains independent.
 
 CCL Control Fix uses the reconciled 1.4.0 reference. It repairs missing per-representation port/action connections, arbitrates one dispatch per vehicle/port/action/frame, preserves authored bindings/direction/repeat policies, and releases momentary input safely across parent shutdown. Unknown authored direction/repeat leaves backup inactive. Existing prefab/reader/HUD mutations need restart for exact restoration.
 

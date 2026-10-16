@@ -320,7 +320,7 @@ public static class ManagedChecks
     // actual Unity audio APIs and must not run in a CLR-only fixture.
     private static void DisableNewModules(ToolboxSettings value)
     {
-        foreach (string name in new[] { "HudGuard", "ConsistFix", "CclControlFix", "LocoSoundPitch", "SmokeFix" })
+        foreach (string name in new[] { "HudGuard", "CclControlFix", "LocoSoundPitch", "SmokeFix" })
         {
             var field = typeof(ToolboxSettings).GetField(name);
             if (field != null) field.SetValue(value, false);
@@ -339,3 +339,4 @@ public static class ManagedChecks
     private static void Check(bool value, string name)
     { string line = (value ? "PASS: " : "FAIL: ") + name; checks.Add(line); Console.WriteLine(line); if (value) passed++; else failed++; }
 }
+
