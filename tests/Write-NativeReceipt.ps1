@@ -27,6 +27,7 @@ if ($Kind -eq 'SignClearance') {
     $taskScope = 'Actual Toolbox parent, installed UMM/DoubleTrack sign list, native registry/RailTrack point sets and Unity Transforms in isolated Unity Editor. Generated rail/list contents and controlled callback dispatch; no full game boot, generation coroutine, real map traversal, saves or GUI.'
 } elseif ($Kind -eq 'SkinRegistration') {
     $taskInputs += @((Join-Path $GamePath 'Mods\DVCustomCarLoader\CCL.Importer.dll'),
+        (Join-Path $GamePath 'Mods\DVCustomCarLoader\Info.json'),
         (Join-Path $GamePath 'Mods\DVCustomCarLoader\CCL.Types.dll'),
         (Join-Path $PSScriptRoot 'UnityFixture\Assets\Editor\NativeSkinRegistrationChecks.cs'),
         (Join-Path $PSScriptRoot 'Run-NativeSkinRegistrationFixture.ps1'),
@@ -41,7 +42,7 @@ if ($Kind -eq 'SignClearance') {
     $taskScope = 'Installed native material handler and Skin Manager callback with the compiled Toolbox Harmony prefix in isolated Unity objects. Manually constructed explosion flag/callback transitions; no physical explosion, streaming or SaveManager.'
 }
 [ordered]@{
-    date = '2026-10-16'; unity = $taskUnity; checks = $taskChecks; failures = 0
+    date = '2026-10-17'; unity = $taskUnity; checks = $taskChecks; failures = 0
     verdict = $taskVerdict; verdictSha256 = (Get-FileHash -LiteralPath $taskVerdict).Hash
     inputs = @($taskInputs | ForEach-Object { Get-FileHash -LiteralPath $_ | Select-Object Path,Hash })
     scope = $taskScope

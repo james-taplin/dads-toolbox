@@ -1,6 +1,6 @@
 # Dad's Toolbox
 
-Development release **0.4.1-dev**, 16 October 2026.
+Development release **0.4.2-dev**, 17 October 2026.
 
 One Unity Mod Manager entry and one DLL contain six feature groups. Skin Manager has two independent corrections, giving seven saved switches. A selected switch expresses your preference; its status says whether the feature is actually running, waiting for a dependency, blocked by a standalone copy, or faulted.
 
@@ -19,7 +19,7 @@ The H6F Consist Fix has been removed entirely: no trainset patch, dependency wat
 
 HUD Guard checks the actual loaded/active HeadsUpDisplay entry and its native reader API (tested 1.1.2). Controls, smoke and sound wait for loaded/active CCL. The original Control and Sound behaviour remains within its documented scope; a missing locomotive/control/audio configuration is not invented.
 
-Scorch protection requires active Skin Manager UMM 4.4.1, with no CCL prerequisite. Embedded-skin registration additionally requires CCL UMM 3.1.9. CCL 3.1.11 is intentionally not enabled for that correction before runtime validation. Skin Manager's DLL version is 4.2.0.0 despite its package version of 4.4.1. Signs require DoubleTrack UMM 2.1.1 and its checked generated-sign API. These dependencies remain optional for the pack.
+Scorch protection requires active Skin Manager UMM 4.4.1, with no CCL prerequisite. Embedded-skin registration additionally requires CCL UMM 3.1.9 or newer and the exact supported activation callback APIs. The installed 3.1.11 callback still performs synchronous vehicle registration after the earlier Skin Manager listener; the native fixture reproduces the rejected skins and verifies recovery with this correction. Original 3.1.9 acceptance is retained historically. Later versions are permitted when the API matches, but are not individually certified by that policy. Skin Manager's DLL version is 4.2.0.0 despite its package version of 4.4.1. Signs require DoubleTrack UMM 2.1.1 and its checked generated-sign API. These dependencies remain optional for the pack.
 
 The UMM panel has independent switches/statuses and sound/sign options. Re-scan signs rebuilds geometry caches. Retry optional features clears contained faults and retries availability. Normal UMM save dispatch writes the one Toolbox Settings.xml. Missing/disabled dependencies preserve your saved choices and leave the relevant feature inactive.
 

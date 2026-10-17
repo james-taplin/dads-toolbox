@@ -1,6 +1,6 @@
 # Dad's Toolbox
 
-**0.4.1-dev** — one Unity Mod Manager mod for Derail Valley, with independent options and dependency/conflict status for each fix.
+**0.4.2-dev** — one Unity Mod Manager mod for Derail Valley, with independent options and dependency/conflict status for each fix.
 
 | Feature | Included scope |
 | --- | --- |
@@ -15,9 +15,11 @@ Six feature groups expose seven saved switches. Dependencies remain optional. A 
 
 Consist Fix (H6F) was removed completely in 0.4.1-dev following the upstream repair. Older Toolbox settings remain compatible; the obsolete option is discarded when settings are saved.
 
+Embedded-skin registration now accepts CCL 3.1.9 and newer when its required activation APIs are present. The ordering correction remains needed and passes the native fixture against installed CCL 3.1.11. Skin Manager remains limited to 4.4.1. Future CCL versions are allowed by policy, not claimed as individually tested.
+
 ## Download and installation
 
-Download **DadsToolbox-0.4.1-dev.zip** from the [0.4.1-dev release](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.1-dev) and install the ZIP through Unity Mod Manager with Derail Valley closed.
+Download **DadsToolbox-0.4.2-dev.zip** from the [0.4.2-dev release](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.2-dev) and install the ZIP through Unity Mod Manager with Derail Valley closed.
 
 When migrating, disable/remove the superseded standalone fixes before a cold restart: CCLSmokeFix, DVCCLControlFix, SteamSizePitch, DoubleTrackSignClearance and DVRollingStockCompatibility (the latter supplies both HUD and H6F repairs). Keep the actual CCL, HUD, Skin Manager and DoubleTrack dependency mods and your locomotive packs. Do not run duplicate fixes together. ZSounds is incompatible with Loco Sound Pitch.
 
@@ -35,7 +37,7 @@ Build on Windows with a .NET SDK and an installed Derail Valley/UMM installation
 
 Test runners are under tests/. Native tests use an isolated Unity 2019.4.40f1 Editor and installed optional-mod assemblies. They do not start Derail Valley or load user saves. Paths can be supplied to the runners. Run the three tests/Run-Native* fixtures sequentially because they share one Editor test project.
 
-All nine suites passed against the released DLL: **16,385 checks, zero failures**, including 14,808 parameterised sound-rule checks. See [validation](docs/VALIDATION-0.4.1-dev.md) and [machine-readable results](evidence/validation.json). This does not mean 16,385 gameplay scenarios.
+All nine suites passed against the released DLL: **16,394 checks, zero failures**, including 14,808 parameterised sound-rule checks. See [validation](docs/VALIDATION-0.4.2-dev.md) and [machine-readable results](evidence/validation.json). This does not mean 16,394 gameplay scenarios.
 
 After rebuilding, all exact-DLL test receipts must be regenerated before WriteValidation.ps1 and Package.ps1 will accept the candidate. Runtime dependencies, generated Editor caches, raw local logs, private handovers and user settings are not included in this repository or release.
 

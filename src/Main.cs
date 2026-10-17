@@ -144,8 +144,11 @@ namespace DadsToolbox
             if (!enabled || !settings.SkinRegistrationFix) reason = enabled ? "Off" : "Toolbox disabled";
             else if (sm == null || !sm.Loaded || !sm.Active || ccl == null || !ccl.Loaded || !ccl.Active)
                 reason = "Inactive: requires active Skin Manager and CCL.";
-            else if (sm.Version != new Version(4, 4, 1) || ccl.Version != new Version(3, 1, 9))
-                reason = "Inactive: validated versions are Skin Manager 4.4.1 and CCL 3.1.9.";
+            // The exact callback signatures are checked again by Install;
+            // newer CCL versions need not match one exact package version.
+            else if (sm.Version != new Version(4, 4, 1) || ccl.Version == null || ccl.Version < new Version(3, 1, 9))
+                reason = "Inactive: requires Skin Manager 4.4.1 and CCL 3.1.9 or newer; found Skin Manager " +
+                    sm.Version + " and CCL " + (ccl.Version == null ? "unknown" : ccl.Version.ToString()) + ".";
             if (reason != null) skinRegistration.Uninstall();
             else
             {

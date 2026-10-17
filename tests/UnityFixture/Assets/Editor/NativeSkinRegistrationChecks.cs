@@ -28,7 +28,8 @@ public static class NativeSkinRegistrationChecks
     static readonly List<string> Order = new List<string>();
     static int checks, failures, errors, registrations;
     static bool register = true, throwRegistration;
-    static string output, packPath;
+    static string output, packPath, cclVersion;
+    [Serializable] sealed class PackageInfo { public string Version; }
     static readonly string[] Ids = { "ToolboxStartupEngine", "ToolboxStartupTender" };
     static readonly string[] Themes = { "DVRT", "DVRT_New", "Null" };
     static readonly string[] Props = { "_MainTex", "_MetallicGlossMap", "_BumpMap" };
@@ -113,7 +114,7 @@ public static class NativeSkinRegistrationChecks
         var smEntry = Entry("SkinManagerMod", Path.Combine(output, "host"), true, "4.4.1", sm);
         smMain.GetProperty("Instance", BF).GetSetMethod(true).Invoke(null, new[] { smEntry });
         modEntries.Add(smEntry);
-        modEntries.Add(Entry("DVCustomCarLoader", Path.Combine(output, "ccl-host"), true, "3.1.9", ccl));
+        modEntries.Add(Entry("DVCustomCarLoader", Path.Combine(output, "ccl-host"), true, cclVersion, ccl));
         var themeDict = (IDictionary)provider.GetField("_themeDict", BF).GetValue(null);
         var nativeDict = (IDictionary)provider.GetField("_builtInThemeDict", BF).GetValue(null);
         foreach (string name in new[] { "DVRT", "DVRT_New", "Relic", "Relic_Rusty", "Null" })
@@ -184,6 +185,8 @@ public static class NativeSkinRegistrationChecks
             umm = Assembly.LoadFrom(Path.Combine(managed, "UnityModManager/UnityModManager.dll"));
             sm = Assembly.LoadFrom(Path.Combine(game, "Mods/SkinManagerMod/SkinManagerMod.dll"));
             ccl = Assembly.LoadFrom(Path.Combine(game, "Mods/DVCustomCarLoader/CCL.Importer.dll"));
+            cclVersion = JsonUtility.FromJson<PackageInfo>(File.ReadAllText(Path.Combine(game, "Mods/DVCustomCarLoader/Info.json"))).Version;
+            Report.AppendLine("Installed CCL UMM version " + cclVersion);
             toolbox = Assembly.LoadFrom(Environment.GetEnvironmentVariable("TOOLBOX_FIXTURE_DLL") ?? Path.Combine(root, "build/DadsToolbox.dll"));
             provider = sm.GetType("SkinManagerMod.SkinProvider");
             modType = umm.GetType("UnityModManagerNet.UnityModManager+ModEntry"); infoType = umm.GetType("UnityModManagerNet.UnityModManager+ModInfo");
@@ -347,10 +350,29 @@ public static class NativeSkinRegistrationChecks
             Toggle(cclEntry, false); Toggle(cclEntry, true);
             Check(!running(), "dependency changes cannot restart a disabled parent module");
             apply(); Check(running() && scorch(), "parent re-enable restores both saved choices");
-            Set(cclEntry, "Version", new Version(3, 1, 10)); apply();
-            Check(!running() && scorch(), "unvalidated CCL version disables registration correction only");
-            Set(cclEntry, "Version", new Version(3, 1, 9)); apply();
-            Check(running(), "supported CCL dependency recovers without changing the desired option");
+            Set(cclEntry, "Version", new Version(3, 1, 8)); apply();
+            Check(!running() && scorch(), "CCL below 3.1.9 disables registration correction only");
+            Set(cclEntry, "Version", null); apply();
+            Check(!running() && scorch(), "unknown CCL version disables registration correction only");
+            foreach (var version in new[] { new Version(3, 1, 9), new Version(3, 1, 10), new Version(3, 1, 11), new Version(3, 2, 0), new Version(4, 0, 0) })
+            {
+                Set(cclEntry, "Version", version); apply();
+                Check(running() && scorch(), "CCL version policy accepts " + version + " with the installed compatible API; metadata boundary check, not that version's binary");
+            }
+            Set(cclEntry, "Version", new Version(cclVersion));
+            // A loaded assembly cannot change under an installed module. Start
+            // a new activation so this exercises Install's cold API validation.
+            Set(settings, "SkinRegistrationFix", false); apply();
+            Set(cclEntry, "mAssembly", typeof(NativeSkinRegistrationChecks).Assembly); apply();
+            Set(settings, "SkinRegistrationFix", true); apply();
+            Check(!running() && scorch(), "new-enough CCL metadata cannot bypass incompatible callback API rejection");
+            Set(cclEntry, "mAssembly", ccl); apply();
+            Check(running() && scorch(), "installed CCL " + cclVersion + " recovers through actual parent API checks");
+            var smEntry = modEntries.Cast<object>().First(m => (string)Get(Get(m, "Info"), "Id") == "SkinManagerMod");
+            Set(smEntry, "Version", new Version(4, 4, 2)); apply();
+            Check(!running(), "Skin Manager version policy remains limited to validated 4.4.1");
+            Set(smEntry, "Version", new Version(4, 4, 1)); apply();
+            Check(running() && scorch(), "validated Skin Manager restores both independent corrections");
         }
         finally { main.GetMethod("OnUnload", BF).Invoke(null, new[] { parent }); }
         Check(!running() && !scorch(), "actual parent unload cleans both module owners and its dependency subscription");
