@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "4bc46c8a354ee106dbec190d9990a8ab044fce8a",
+  "files": [
+    "README.md",
+    "docs\\ISSUE_AND_FIX.md",
+    "docs\\README.md",
+    "docs\\VALIDATION-0.4.0-dev.md",
+    "docs\\VALIDATION-0.4.1-dev.md",
+    "docs\\VALIDATION-0.4.2-dev.md"
+  ],
+  "description": "Original public documentation before the player-facing rewrite. Original GitHub release notes are saved in release-notes/ before those are edited."
+}

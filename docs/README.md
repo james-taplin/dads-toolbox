@@ -1,62 +1,51 @@
-# Dad's Toolbox
+# Dad's Toolbox user guide
 
-Development release **0.4.2-dev**, 17 October 2026.
+Each fix has its own switch in Unity Mod Manager. Its status tells you whether it is active, waiting for a dependency or blocked by another mod. Your choices stay saved even when a dependency is missing.
 
-One Unity Mod Manager entry and one DLL contain six feature groups. Skin Manager has two independent corrections, giving seven saved switches. A selected switch expresses your preference; its status says whether the feature is actually running, waiting for a dependency, blocked by a standalone copy, or faulted.
+## Compatibility
 
-| Feature | Scope |
+| Fix | Required mod |
 | --- | --- |
-| HUD Guard | Supported HeadsUpDisplay force/power/slip readers return native unavailable values after a null-reference failure. Valid values and other exception types retain their behaviour. |
-| CCL Control Fix | Preserves authored bindings and repairs missing CCL control connections, shared-port/rear-cab dispatch, momentary release and the documented F4/notch cases. |
-| Loco Sound Pitch | Original steam boiler-barrel-area heuristic plus configured-empty-mass/donor comparison for non-steam CCL locomotives. Native exterior audio only; cab/custom recordings and stock locomotives are protected. |
-| Skin Manager Fix | Separate switches preserve scorch on exploded vehicles and defer embedded-skin discovery until CCL registration completes. |
-| CCL Smoke Fix | Applies native S282 stack-smoke reader colour/opacity/curve values to eligible CCL systems at subsequent controller initialisations. |
-| DoubleTrack signs | Moves generated signs outward to clear nearby horizontal rail centrelines, retaining height/facing. Defaults: 2 m clearance, 8 m movement limit, 5 cm search steps. |
+| HUD Guard | HeadsUpDisplay 1.1.2 |
+| CCL Control Fix, Loco Sound Pitch, CCL Smoke Fix | Custom Car Loader |
+| Skin scorch protection | Skin Manager 4.4.1 |
+| Embedded-skin registration | Skin Manager 4.4.1 and CCL 3.1.9 or newer |
+| Sign clearance | DoubleTrack 2.1.1 |
 
-The H6F Consist Fix has been removed entirely: no trainset patch, dependency watcher, setting or panel remains. The actual locomotive mod is managed separately. Older Settings.xml files are accepted and retain every other preference.
+Embedded-skin registration has been checked with CCL 3.1.11. Newer CCL versions are allowed when the required interfaces match; future updates can still introduce incompatibilities.
 
-## Optional dependencies and controls
+## Settings
 
-HUD Guard checks the actual loaded/active HeadsUpDisplay entry and its native reader API (tested 1.1.2). Controls, smoke and sound wait for loaded/active CCL. The original Control and Sound behaviour remains within its documented scope; a missing locomotive/control/audio configuration is not invented.
+- **Sound pitch:** adjust the strength, sound groups and locomotive overrides. The fix targets native exterior audio; stock locomotives, cab audio and custom recordings are protected.
+- **Sign clearance:** choose the minimum clearance and maximum movement. Defaults are 2 m and 8 m. Use **Re-scan signs** after changing clearance settings.
+- **Retry optional features:** retry a fix after resolving a dependency or reported error.
 
-Scorch protection requires active Skin Manager UMM 4.4.1, with no CCL prerequisite. Embedded-skin registration additionally requires CCL UMM 3.1.9 or newer and the exact supported activation callback APIs. The installed 3.1.11 callback still performs synchronous vehicle registration after the earlier Skin Manager listener; the native fixture reproduces the rejected skins and verifies recovery with this correction. Original 3.1.9 acceptance is retained historically. Later versions are permitted when the API matches, but are not individually certified by that policy. Skin Manager's DLL version is 4.2.0.0 despite its package version of 4.4.1. Signs require DoubleTrack UMM 2.1.1 and its checked generated-sign API. These dependencies remain optional for the pack.
+## Switching from standalone fixes
 
-The UMM panel has independent switches/statuses and sound/sign options. Re-scan signs rebuilds geometry caches. Retry optional features clears contained faults and retries availability. Normal UMM save dispatch writes the one Toolbox Settings.xml. Missing/disabled dependencies preserve your saved choices and leave the relevant feature inactive.
+Disable the matching standalone fixes before starting the game: CCLSmokeFix, DVCCLControlFix, SteamSizePitch, DoubleTrackSignClearance and Rolling Stock Compatibility (DVRollingStockCompatibility). Keep their underlying mods and your locomotive packs installed. Restart the game after making this change.
 
-## Sound settings migration
+For SteamSizePitch, back up its Settings.xml and leave the disabled mod's folder in place for the first Toolbox launch. Toolbox imports those settings automatically; existing Toolbox sound settings take priority. Check the imported values before removing the old folder.
 
-On first use, older Toolbox settings import the sibling standalone SteamSizePitch/Settings.xml once. All steam/non-steam values, group switches, shared donor and per-livery overrides are retained. Explicit existing Toolbox sound settings take precedence. Only Toolbox's own file is written; the standalone original remains untouched.
+If the import fails, sound pitch stays inactive. Restore a readable settings file and restart, or use **Use current Toolbox sound settings instead** to keep the values shown in Toolbox.
 
-Unreadable standalone settings leave sound inactive with a retryable status. Correcting that file retries on the next load. The explicit “Use current Toolbox sound settings instead” button permits a deliberate choice to use the displayed Toolbox values. Import never silently resets a known nondefault steam strength.
+Loco Sound Pitch is incompatible with ZSounds. Choose which one you want to use.
 
-## Standalone migration
+When updating Toolbox, keep its Settings.xml to preserve your preferences.
 
-Keep actual dependency mods installed. Duplicate standalone fixes must be disabled/removed before a cold restart; the Toolbox does not change another mod's files, enable choice or patches.
+## Toggles and restarts
 
-- DVRollingStockCompatibility supplies both HUD and H6F repairs. Toolbox retains only HUD Guard; the H6F repair was removed in 0.4.1-dev after its developer fixed it upstream.
-- DVCCLControlFix, SteamSizePitch, CCLSmokeFix and DoubleTrackSignClearance must not operate beside their integrated replacements. Loaded-but-inactive copies/residual owners can still require restart.
-- ZSounds is incompatible with Loco Sound Pitch.
+| Fix | Effect of turning it off |
+| --- | --- |
+| HUD Guard | Protection stops immediately. |
+| Loco Sound Pitch | Tracked continuous sounds return to their original pitch. Sounds already playing as one-shots finish at their starting pitch. |
+| CCL Control Fix | Repairs stop and held momentary controls are released. Restart to fully restore changed vehicle controls and HUD data. |
+| CCL Smoke Fix | Future corrections stop. Restart to restore smoke already changed. |
+| Sign clearance | Future moves stop. Restart to restore signs already moved. |
+| Embedded-skin registration | Future recovery stops. Skins already loaded remain available for the session. |
+| Skin scorch protection | Future skin reloads are unprotected. Enabling it cannot restore scorch already overwritten. |
 
-A conflict blocks only the relevant feature. Turning a standalone checkbox off during the same process may leave patches, components or watchers behind, so it does not establish a clean migration.
+For a clean comparison with a fix disabled, restart the game.
 
-## What disabling means
+## Help
 
-HUD guard removes its owned finalizers. Sound restores owned continuous/direct pitches, preserves sources another mod has taken over, and lets active one-shots finish at their starting pitch. Control shutdown releases repaired momentary inputs before removing its owned hooks.
-
-Some changes cannot be undone by unpatching: controls can leave changed prefab/readers/HUD data, smoke leaves values already copied to live readers, and signs stay moved. Restart for exact restoration. Skin registration leaves already-discovered skins under native Skin Manager lifetime. Scorch protection affects future applications and cannot recreate scorch overwritten earlier.
-
-## Shared DLL design and risks
-
-The parent owns one entrypoint, callback set, settings file and update dispatcher. Each patching feature has a distinct Harmony owner and explicit targets; no assembly-wide PatchAll is used. Signs use the parent's update and create no watcher. Sound uses that update instead of a second persistent runner. Unload attempts every module's cleanup, reports failures and creates fresh instances for a new parent lifetime.
-
-This prevents the old standalone loaders from replacing one another's callbacks/settings or installing every annotated patch. Feature-level dependency, conflict and update failures are contained. It does not eliminate a shared failure boundary: an assembly/entrypoint load failure can prevent the entire pack loading, and a base-game API change may affect several features. Shared patch targets/startup timing therefore need combined validation.
-
-Skin registration also depends on the real synchronous activation boundary. Audio quality, real input/focus/physics, streaming and saves require player acceptance beyond isolated fixtures.
-
-## Verification boundary
-
-Read validation.json for exact tested DLL identity, suite counts, source hashes and remaining acceptance. Fixtures exercise actual installed UMM/Harmony and native Unity APIs with controlled data; some game consumers/import bodies/speed inputs are deliberately substituted. Those boundaries are documented in the source evidence.
-
-Still pending: clean game startup and standalone migration; both Leader cabs and other CCL controls; actual sound listening/performance and rendered smoke; actual embedded packs/5AT artwork, 4K transitions, streaming, physical explosion/repair, GUI and save/reload. Keep the existing companion paint-data workaround until actual embedded-pack acceptance passes.
-
-The archive contains one DadsToolbox root with only our DLL, metadata, documentation and validation record. No game, Unity, UMM, Harmony or optional-mod binaries are redistributed. Bogie interpolation/visual smoothing and Position Sync are outside this release.
+See [troubleshooting](ISSUE_AND_FIX.md). When reporting a problem, include your game and mod versions, the affected locomotive or location, steps to reproduce it and the relevant Player.log messages.

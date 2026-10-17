@@ -1,44 +1,38 @@
 # Dad's Toolbox
 
-**0.4.2-dev** — one Unity Mod Manager mod for Derail Valley, with independent options and dependency/conflict status for each fix.
+A collection of fixes and tweaks for Derail Valley, together in one Unity Mod Manager mod. Turn each fix on or off independently, with extra settings for sound pitch and sign clearance.
 
-| Feature | Included scope |
+**[Download 0.4.2-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.2-dev)** · [Changelog](CHANGELOG.md) · [User guide](docs/README.md)
+
+## What's included
+
+| Fix | What it does |
 | --- | --- |
-| HUD Guard | Protects supported HeadsUpDisplay readers from null-reference failures while preserving valid results. |
-| CCL Control Fix | Missing control connections, shared-port/rear-cab arbitration, momentary release and the documented HUD/notch cases. |
-| Loco Sound Pitch | Size-based pitch adjustment for native exterior audio on CCL steam and non-steam locomotives. Stock, cab and custom recordings are protected. |
-| Skin Manager fixes | Separate scorch protection and embedded-skin registration switches. |
-| CCL Smoke Fix | Corrects matching CCL stack-smoke readers from the native S282 template on load/spawn. |
-| DoubleTrack signs | Moves generated signs clear of nearby tracks while retaining height and facing. |
+| HUD Guard | Prevents certain HUD errors when reading locomotive force, power and wheel slip. |
+| CCL Control Fix | Repairs missing control connections and fixes some shared-control, rear-cab and HUD input issues on CCL locomotives. |
+| Loco Sound Pitch | Adjusts native exterior locomotive sounds to better suit the size of CCL steam and diesel locomotives. |
+| Skin Manager fixes | Preserves scorch on exploded vehicles and helps skins bundled with CCL vehicles load correctly. Two separate switches. |
+| CCL Smoke Fix | Corrects stack-smoke colour and opacity on affected CCL locomotives. |
+| DoubleTrack sign clearance | Moves generated signs clear of nearby tracks. |
 
-Six feature groups expose seven saved switches. Dependencies remain optional. A missing/inactive dependency or conflicting standalone leaves only the corresponding feature inactive, preserving the selected preference.
+Only the fixes relevant to your installed mods run. A missing dependency leaves that fix inactive and keeps your chosen settings.
 
-Consist Fix (H6F) was removed completely in 0.4.1-dev following the upstream repair. Older Toolbox settings remain compatible; the obsolete option is discarded when settings are saved.
+## Installation
 
-Embedded-skin registration now accepts CCL 3.1.9 and newer when its required activation APIs are present. The ordering correction remains needed and passes the native fixture against installed CCL 3.1.11. Skin Manager remains limited to 4.4.1. Future CCL versions are allowed by policy, not claimed as individually tested.
+1. Close Derail Valley and install the release ZIP through Unity Mod Manager.
+2. Disable standalone versions of the included fixes. If moving from SteamSizePitch, [preserve your sound settings first](docs/README.md#switching-from-standalone-fixes).
+3. Start the game and open Dad's Toolbox in UMM to choose your fixes.
 
-## Download and installation
+Keep CCL, Skin Manager, HeadsUpDisplay and DoubleTrack installed if you use their fixes. Loco Sound Pitch cannot run alongside ZSounds.
 
-Download **DadsToolbox-0.4.2-dev.zip** from the [0.4.2-dev release](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.2-dev) and install the ZIP through Unity Mod Manager with Derail Valley closed.
+This is a development release. Restart after changing mods or when you need to undo changes already applied to vehicles or signs. See the [user guide](docs/README.md) for compatibility and toggle behaviour.
 
-When migrating, disable/remove the superseded standalone fixes before a cold restart: CCLSmokeFix, DVCCLControlFix, SteamSizePitch, DoubleTrackSignClearance and DVRollingStockCompatibility (the latter supplies both HUD and H6F repairs). Keep the actual CCL, HUD, Skin Manager and DoubleTrack dependency mods and your locomotive packs. Do not run duplicate fixes together. ZSounds is incompatible with Loco Sound Pitch.
+## Building from source
 
-Preserve SteamSizePitch/Settings.xml before removing that folder. Automatic one-time import reads that original sibling file; if it is removed first, migrate its values into Toolbox settings before starting the game. Existing explicit Toolbox sound values take precedence. Unreadable imports leave sound inactive rather than silently resetting a nondefault strength.
-
-See [feature behaviour, dependencies and toggle limits](docs/README.md). This is a **development release**: controlled automated fixtures have passed; full live-world acceptance remains pending. Some mutations need a restart for exact restoration.
-
-## Build and verification
-
-Build on Windows with a .NET SDK and an installed Derail Valley/UMM installation:
+On Windows, with a .NET SDK and Derail Valley installed:
 
 ~~~powershell
 .\Build.ps1 -GamePath 'C:\path\to\Derail Valley'
 ~~~
 
-Test runners are under tests/. Native tests use an isolated Unity 2019.4.40f1 Editor and installed optional-mod assemblies. They do not start Derail Valley or load user saves. Paths can be supplied to the runners. Run the three tests/Run-Native* fixtures sequentially because they share one Editor test project.
-
-All nine suites passed against the released DLL: **16,394 checks, zero failures**, including 14,808 parameterised sound-rule checks. See [validation](docs/VALIDATION-0.4.2-dev.md) and [machine-readable results](evidence/validation.json). This does not mean 16,394 gameplay scenarios.
-
-After rebuilding, all exact-DLL test receipts must be regenerated before WriteValidation.ps1 and Package.ps1 will accept the candidate. Runtime dependencies, generated Editor caches, raw local logs, private handovers and user settings are not included in this repository or release.
-
-No game, Unity, Harmony, UMM, CCL, HUD, Skin Manager or DoubleTrack binaries are redistributed.
+[Technical validation](docs/VALIDATION-0.4.2-dev.md) is available for contributors.
