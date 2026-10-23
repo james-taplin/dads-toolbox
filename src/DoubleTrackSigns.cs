@@ -81,6 +81,7 @@ namespace DadsToolbox
             catch (Exception ex)
             {
                 fault = ex.GetType().Name + ": " + ex.Message;
+                Log("Sign scan exception: " + ex);
                 Stop("Inactive: sign scan failed (" + fault + "). Re-scan to retry.");
             }
         }
@@ -166,6 +167,7 @@ namespace DadsToolbox
         private Assembly boundAssembly;
         private FieldInfo signsField, signDebugTextField;
         private Type signDebugType;
+        private GameObject railwayRoot;
         private RailTrack[] indexedTrackArray;
         private IList indexedSigns;
         internal bool HasMovedSigns { get; private set; }
@@ -202,6 +204,7 @@ namespace DadsToolbox
             QueryDeduplicator.Clear();
             indexedTrackArray = null;
             indexedSigns = null;
+            railwayRoot = null;
         }
 
         internal void Scan()
@@ -221,10 +224,27 @@ namespace DadsToolbox
         }
         private bool EnsureTrackIndex()
         {
-            if (RailTrackRegistryBase.Instance == null) return false;
-            RailTrack[] currentTracks = RailTrackRegistryBase.RailTracks;
+            var registry = RailTrackRegistryBase.Instance;
+            // During world reload the registry can exist before [railway].
+            // OrderedRailtracks lazily dereferences that root, so do not call
+            // it until the scene is ready. Discard the previous world's index.
+            if (registry == null)
+            {
+                Reset();
+                return false;
+            }
+            // Cache the live root; avoid a scene-wide lookup on every scan.
+            if (railwayRoot == null || !railwayRoot.activeInHierarchy)
+                railwayRoot = GameObject.Find("[railway]");
+            if (railwayRoot == null)
+            {
+                Reset();
+                return false;
+            }
+            RailTrack[] currentTracks = registry.OrderedRailtracks;
             if (currentTracks == null || currentTracks.Length == 0)
             {
+                Reset();
                 return false;
             }
 

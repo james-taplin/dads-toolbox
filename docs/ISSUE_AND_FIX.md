@@ -22,6 +22,10 @@ Enable embedded-skin registration and check that Skin Manager 4.4.1 and CCL 3.1.
 
 Some corrections modify vehicles or signs already loaded into the world. Restart for a clean comparison. The [toggle guide](README.md#toggles-and-restarts) explains what each switch can undo.
 
+## Sign clearance stops after reloading the world
+
+Update to 0.4.3-dev or newer. Sign clearance now waits while the railway loads and resumes automatically. For another reported scanning error, try **Re-scan signs** and include the error from Player.log if it persists.
+
 ## Reporting a problem
 
 Include the Toolbox, game and relevant mod versions, steps to reproduce, and Player.log messages around the failure. Mention which locomotive or map location is affected.

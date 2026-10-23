@@ -1,10 +1,10 @@
 {
-  "date": "2026-10-17",
+  "date": "2026-10-23",
   "package": "DadsToolbox",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "status": "development candidate; isolated integration verified; live-world acceptance pending",
-  "binarySha256": "03AD903F1B3B1559016A163C0728EC64C029902622B3EF09817D55853FF80C4E",
-  "passed": 16394,
+  "binarySha256": "ECDA2B3D147A4F25925B40C828898980BDBD06CB9EA861CDA94838C3086C7297",
+  "passed": 16402,
   "failed": 0,
   "modules": [
     "SkinDamageFix",
@@ -64,7 +64,7 @@
       "evidence": "evidence/skin-damage/native-fixture-checks.txt"
     },
     {
-      "passed": 838,
+      "passed": 846,
       "failed": 0,
       "unityVersion": "2019.4.40f1",
       "scope": "Actual Toolbox parent, installed UMM/DoubleTrack sign list, native registry/RailTrack point sets and Unity Transforms in isolated Unity Editor. Generated rail/list contents and controlled callback dispatch; no full game boot, generation coroutine, real map traversal, saves or GUI.",
@@ -83,7 +83,7 @@
       "failed": 0,
       "scope": "Exact combined DLL parent, seven independent preferences/all 128 native UMM XML combinations, older settings and real sibling sound-settings migration with byte preservation/precedence/retry, sole callback/event ownership, off/disabled and default-selected dependency-absent/inactive lifecycles, standalone conflicts, fresh recreation, injected failed cleanup with all seven cleanup attempts and foreign-owner preservation. No native Unity/game/audio execution.",
       "evidence": "evidence/combined/checks.txt",
-      "receiptSha256": "4A76A62990CAB5AE202D0F300965A4C2BC48D4FA4EF670521868CA53A2DCE127"
+      "receiptSha256": "D33FD41B428946EAB969E09922930180E9F03434D441256943FF9ED85152F0A4"
     },
     {
       "id": "hud",
@@ -91,7 +91,7 @@
       "failed": 0,
       "scope": "hud canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
       "evidence": "evidence/hud/checks.txt",
-      "receiptSha256": "827A4F60EB88250AB79AC6EBF0EFBF75BFCC5C77648DAFE26B8020FFB2BDCC0E"
+      "receiptSha256": "D1A73807C02D180254A33426C9761B69AA1F3EC0D280500C258CF931822EE2BE"
     },
     {
       "id": "smoke",
@@ -99,7 +99,7 @@
       "failed": 0,
       "scope": "smoke canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
       "evidence": "evidence/smoke/checks.txt",
-      "receiptSha256": "EA11FD0EE7A4E054B28B694BB2E089687AE40367C597F9FD1B0DE83CC9E73109"
+      "receiptSha256": "2A04F5F799C5D07FD1640F4E9A0017BE3C1733F33A46B29FBAAD366D08DA09B4"
     },
     {
       "id": "controls",
@@ -107,7 +107,7 @@
       "failed": 0,
       "scope": "Actual adapted source regressions using explicit managed Unity/control/input stand-ins and audited native input method excerpts; original23 pure math/key-plan checks; exact DLL lifecycle with actual installed UMM/Harmony/native method targets and inactive synthetic Unity component/shared-port/authored-input/scheduler reference remapping. ActionReference fields are omitted identically by native authored input, original standalone candidate and merged component in this fixture, so their cloning remains unavailable/unverified. Live native controls, Rewired focus, physics, real reach, real locomotive prefabs, save/load and gameplay not executed.",
       "evidence": "evidence/controls/result.json",
-      "receiptSha256": "937494E4B86459CB67060EBDFAB310FB079335F99558C9C45200303C58F2760E"
+      "receiptSha256": "860D9404AF39F21C935FF4B8A5CE5C50E8F9C8C5D842C8107F65F7E439BD69F6"
     },
     {
       "id": "sound",
@@ -115,13 +115,13 @@
       "failed": 0,
       "scope": "Source-linked preserved rules plus exact-DLL native Unity audio hook, ownership and lifecycle fixtures. Seeded catalogue and controlled inactive car. No game boot, discovery, audible playback or performance acceptance.",
       "evidence": "evidence/sound/native-fixture-checks.txt",
-      "receiptSha256": "A056F469450FA36838AD211EFD3CCCA859E53CE06016650D68EF8B2FF6876060"
+      "receiptSha256": "DF1422ECEBFB95269D43FCF32D17A9807A7BA43FCB7DB334CE9B6FFA62F74C44"
     }
   ],
   "sourceHashes": [
     {
       "path": "src/AssemblyInfo.cs",
-      "sha256": "C9BE6EF5DC36956FB10D6DC71641CAF32D626A31A78C4E91AD940AD309C2266D"
+      "sha256": "B9C51E4DCD18C993DBB9EBB92517113AC48D02BEF919EA9F90612B1BAAE7F72C"
     },
     {
       "path": "src/ControlsBridge.cs",
@@ -145,7 +145,7 @@
     },
     {
       "path": "src/DoubleTrackSigns.cs",
-      "sha256": "65B9E26392A5DAC3A1013323BD95D50CD6436D1C7E865D048D2301B7A47A7C5A"
+      "sha256": "D52DCD226EF0D646C9437B429AC63ADD0A0FBA6EB45058F9F65AF5A234971F81"
     },
     {
       "path": "src/HudGuardModule.cs",

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.3-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.3-dev) — 23 October 2026
+
+- Fixed sign clearance stopping during world reloads. It now waits for the railway to load and resumes automatically.
+- Added fuller diagnostics for unexpected sign-scanning errors.
+
 ## [0.4.2-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.2-dev) — 17 October 2026
 
 - Enabled embedded-skin registration for CCL 3.1.9 and newer, with compatibility checks.

@@ -2,7 +2,7 @@
 
 A collection of fixes and tweaks for Derail Valley, together in one Unity Mod Manager mod. Turn each fix on or off independently, with extra settings for sound pitch and sign clearance.
 
-**[Download 0.4.2-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.2-dev)** · [Changelog](CHANGELOG.md) · [User guide](docs/README.md)
+**[Download 0.4.3-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.3-dev)** · [Changelog](CHANGELOG.md) · [User guide](docs/README.md)
 
 ## What's included
 
@@ -35,4 +35,4 @@ On Windows, with a .NET SDK and Derail Valley installed:
 .\Build.ps1 -GamePath 'C:\path\to\Derail Valley'
 ~~~
 
-[Technical validation](docs/VALIDATION-0.4.2-dev.md) is available for contributors.
+[Technical validation](docs/VALIDATION-0.4.3-dev.md) is available for contributors.

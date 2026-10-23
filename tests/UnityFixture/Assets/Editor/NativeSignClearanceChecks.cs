@@ -153,6 +153,7 @@ public static class NativeSignClearanceChecks
             var registryObject=Keep(new GameObject("Inactive native railway registry fixture")); registryObject.SetActive(false);
             registry=registryObject.AddComponent(native.GetType("RailTrackRegistry",true));
             singleton=registryType.BaseType.GetField("_instance",BF); singleton.SetValue(null,registry);
+            var railway=Keep(new GameObject("[railway]"));
             var first=Track("Fixture source railway",0); var second=Track("Fixture parallel railway",4); Tracks(first,second);
             Signs();
             parent=Entry("DadsToolbox",new Version(0,2,0),toolbox,false);
@@ -213,6 +214,40 @@ public static class NativeSignClearanceChecks
             Check(Active && Near(waiting.transform.position.x,1),"missing live registry waits without accessing a null singleton");
             singleton.SetValue(null,registry); Tick(21.1f);
             Check(Near(waiting.transform.position.x,-2),"late live registry is picked up on the next scan");
+
+            // Native OrderedRailtracks lazily dereferences Find("[railway]").
+            // A new registry can exist during reload before that root is loaded.
+            var reloadSign=Sign(1); Signs(reloadSign);
+            Object.DestroyImmediate(railway);
+            registryType.GetField("_orderedRailtracks",BF).SetValue(registry,null);
+            registryType.GetField("_trackRootParent",BF).SetValue(registry,null);
+            bool nativeMissingRoot=false;
+            try { registryType.GetProperty("OrderedRailtracks").GetValue(registry,null); }
+            catch(TargetInvocationException ex) { nativeMissingRoot=ex.InnerException is NullReferenceException; }
+            Check(nativeMissingRoot,"native registry getter reproduces NullReferenceException before railway root exists");
+            Refresh(); Tick(21.2f);
+            Check(Active && SkinActive && Near(reloadSign.transform.position.x,1),"registry-before-railway reload waits without latching a scanner fault or moving signs");
+            railway=Keep(new GameObject("[railway]"));
+            var reloadTrack=Track("Reloaded railway",0); reloadTrack.transform.SetParent(railway.transform,false); reloadTrack.gameObject.SetActive(true);
+            Tick(21.3f);
+            Check(Active && Near(reloadSign.transform.position.x,1),"waiting reload retains the one-second scan throttle");
+            Tick(21.4f+1f);
+            Check(Active && Near(reloadSign.transform.position.x,-2),"late railway root recovers automatically through the native track getter without manual rescan");
+            reloadTrack.gameObject.SetActive(false); Object.DestroyImmediate(railway);
+            registryType.GetField("_orderedRailtracks",BF).SetValue(registry,null);
+            registryType.GetField("_trackRootParent",BF).SetValue(registry,null);
+            var secondReload=Sign(1); Signs(secondReload); Refresh(); Tick(21.5f);
+            Check(Active && Near(secondReload.transform.position.x,1),"a second railway teardown waits safely after a successful scan");
+            railway=Keep(new GameObject("[railway]"));
+            Tracks(first,second); Refresh(); Tick(21.6f);
+            Check(Active && Near(secondReload.transform.position.x,-2),"scanner resumes on the next ready railway after repeated teardown");
+
+            var inactiveRootSign=Sign(1); Signs(inactiveRootSign); railway.SetActive(false); Refresh(); Tick(21.7f);
+            Check(Active && Near(inactiveRootSign.transform.position.x,1) && ((ICollection)Get(Get(Module,"engine"),"Segments")).Count==0,
+                "inactive railway root pauses correction and discards the previous geometry even when registry tracks are cached");
+            railway.SetActive(true); Tick(22.8f);
+            Check(Active && Near(inactiveRootSign.transform.position.x,-2),"reactivated railway resumes automatically without a manual rescan");
+            Refresh();
 
             Set(Settings,"DoubleTrackSignClearance",false); Toggle(true);
             var disabled=Sign(1); Signs(disabled); Tick(22.2f);
