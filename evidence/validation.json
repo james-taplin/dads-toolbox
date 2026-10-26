@@ -1,10 +1,10 @@
 {
-  "date": "2026-10-23",
+  "date": "2026-10-26",
   "package": "DadsToolbox",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "status": "development candidate; isolated integration verified; live-world acceptance pending",
-  "binarySha256": "ECDA2B3D147A4F25925B40C828898980BDBD06CB9EA861CDA94838C3086C7297",
-  "passed": 16402,
+  "binarySha256": "1C2524FEEBB445611F8ABC0E5670C0B68AB055C494990AEB1DEFE50B8A694E5F",
+  "passed": 16943,
   "failed": 0,
   "modules": [
     "SkinDamageFix",
@@ -79,11 +79,11 @@
     },
     {
       "id": "combined",
-      "passed": 235,
+      "passed": 237,
       "failed": 0,
       "scope": "Exact combined DLL parent, seven independent preferences/all 128 native UMM XML combinations, older settings and real sibling sound-settings migration with byte preservation/precedence/retry, sole callback/event ownership, off/disabled and default-selected dependency-absent/inactive lifecycles, standalone conflicts, fresh recreation, injected failed cleanup with all seven cleanup attempts and foreign-owner preservation. No native Unity/game/audio execution.",
       "evidence": "evidence/combined/checks.txt",
-      "receiptSha256": "D33FD41B428946EAB969E09922930180E9F03434D441256943FF9ED85152F0A4"
+      "receiptSha256": "8E5D03E3FFE06B934E956A074C15DE5A6A523CD55EDB72B95244D5AE4247F7F2"
     },
     {
       "id": "hud",
@@ -91,7 +91,7 @@
       "failed": 0,
       "scope": "hud canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
       "evidence": "evidence/hud/checks.txt",
-      "receiptSha256": "D1A73807C02D180254A33426C9761B69AA1F3EC0D280500C258CF931822EE2BE"
+      "receiptSha256": "710029009F0950C8489E6322A175B28E510599F0B22ACD6648E2FCF05DCE2F91"
     },
     {
       "id": "smoke",
@@ -99,7 +99,7 @@
       "failed": 0,
       "scope": "smoke canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
       "evidence": "evidence/smoke/checks.txt",
-      "receiptSha256": "2A04F5F799C5D07FD1640F4E9A0017BE3C1733F33A46B29FBAAD366D08DA09B4"
+      "receiptSha256": "AF3F9C91BCAC3105B1F0D1EAC8760E1BEFF50B9EF9FE726845D682393AE3F0D8"
     },
     {
       "id": "controls",
@@ -107,21 +107,21 @@
       "failed": 0,
       "scope": "Actual adapted source regressions using explicit managed Unity/control/input stand-ins and audited native input method excerpts; original23 pure math/key-plan checks; exact DLL lifecycle with actual installed UMM/Harmony/native method targets and inactive synthetic Unity component/shared-port/authored-input/scheduler reference remapping. ActionReference fields are omitted identically by native authored input, original standalone candidate and merged component in this fixture, so their cloning remains unavailable/unverified. Live native controls, Rewired focus, physics, real reach, real locomotive prefabs, save/load and gameplay not executed.",
       "evidence": "evidence/controls/result.json",
-      "receiptSha256": "860D9404AF39F21C935FF4B8A5CE5C50E8F9C8C5D842C8107F65F7E439BD69F6"
+      "receiptSha256": "A4119DC9371B7EB5E462B1377F914243865F97BF05D8B7FB08290C4F16298526"
     },
     {
       "id": "sound",
-      "passed": 14850,
+      "passed": 15389,
       "failed": 0,
-      "scope": "Source-linked preserved rules plus exact-DLL native Unity audio hook, ownership and lifecycle fixtures. Seeded catalogue and controlled inactive car. No game boot, discovery, audible playback or performance acceptance.",
+      "scope": "Source-linked bidirectional steam boiler-area/non-steam mass rules plus exact-DLL native AudioSource/one-shot pitch writes, caps, strength, ownership and lifecycle fixtures. Seeded catalogue and controlled inactive car. No game boot, real pack discovery, audible playback or performance acceptance.",
       "evidence": "evidence/sound/native-fixture-checks.txt",
-      "receiptSha256": "DF1422ECEBFB95269D43FCF32D17A9807A7BA43FCB7DB334CE9B6FFA62F74C44"
+      "receiptSha256": "A90358024C47679218B7A53DFE1ED8FE7CEAEB16E20B350E4C545DCA37A619B7"
     }
   ],
   "sourceHashes": [
     {
       "path": "src/AssemblyInfo.cs",
-      "sha256": "B9C51E4DCD18C993DBB9EBB92517113AC48D02BEF919EA9F90612B1BAAE7F72C"
+      "sha256": "6F8189AB9888B00235E3FE190ACFC482A1938FDF84D126A7FE68D9DE93F2DC85"
     },
     {
       "path": "src/ControlsBridge.cs",
@@ -177,15 +177,15 @@
     },
     {
       "path": "src/SoundEngine.cs",
-      "sha256": "BE99A89B71DDDC9269AA32BB937409C1B5D314942DD88A4C9FBE127B8DE20A61"
+      "sha256": "C1EF93CFE86FA735DC1E691BBAE8F75EE185DB02880CC8E733D9DDCC303E92C8"
     },
     {
       "path": "src/SoundPitchModule.cs",
-      "sha256": "4CCB202D768360999878928B782291E778B4E1886A51ABEA534559C213B01347"
+      "sha256": "D3A359A98E7BD5568B7BAFEF1AA5ADEF9695FC0BF01FB0C0BD8A1D13EB5063BE"
     },
     {
       "path": "src/SoundPitchRules.cs",
-      "sha256": "F3F3E65B70A495728E4C2362D2F520A3D3159A548645A6D6CC795E7380CFE7D4"
+      "sha256": "48C55595C2185825305AFBD1B537620881CEB9312A6DD0AFBAB586BA65E28451"
     },
     {
       "path": "src/SoundStockAudio.cs",

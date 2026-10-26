@@ -42,7 +42,7 @@ if ($Kind -eq 'SignClearance') {
     $taskScope = 'Installed native material handler and Skin Manager callback with the compiled Toolbox Harmony prefix in isolated Unity objects. Manually constructed explosion flag/callback transitions; no physical explosion, streaming or SaveManager.'
 }
 [ordered]@{
-    date = '2026-10-23'; unity = $taskUnity; checks = $taskChecks; failures = 0
+    date = '2026-10-26'; unity = $taskUnity; checks = $taskChecks; failures = 0
     verdict = $taskVerdict; verdictSha256 = (Get-FileHash -LiteralPath $taskVerdict).Hash
     inputs = @($taskInputs | ForEach-Object { Get-FileHash -LiteralPath $_ | Select-Object Path,Hash })
     scope = $taskScope

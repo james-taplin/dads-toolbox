@@ -16,7 +16,7 @@ Embedded-skin registration has been checked with CCL 3.1.11. Newer CCL versions 
 
 ## Settings
 
-- **Sound pitch:** adjust the strength, sound groups and locomotive overrides. The fix targets native exterior audio; stock locomotives, cab audio and custom recordings are protected.
+- **Sound pitch:** steam scales by boiler barrel area; diesel and other non-steam locomotives scale by empty mass. Smaller/lighter than the sound donor gives higher pitch; larger/heavier gives lower pitch. Each has separate lower and upper pitch caps and an effect-strength percentage. A 100% pitch cap means original pitch; 0% strength disables the effect, 100% is normal strength, and higher values make it stronger. Existing settings keep their meaning. The fix targets native exterior audio; stock locomotives, cab audio and custom recordings are protected.
 - **Sign clearance:** choose the minimum clearance and maximum movement. Defaults are 2 m and 8 m. Use **Re-scan signs** after changing clearance settings.
 - **Retry optional features:** retry a fix after resolving a dependency or reported error.
 

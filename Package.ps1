@@ -26,7 +26,7 @@ $taskArchive = [IO.Compression.ZipArchive]::new($taskStream, [IO.Compression.Zip
 try {
     foreach ($taskName in $taskPackageFiles) {
         $taskZipEntry = $taskArchive.CreateEntry('DadsToolbox/' + $taskName)
-        $taskZipEntry.LastWriteTime = [DateTimeOffset]::new(2026, 10, 23, 0, 0, 0, [TimeSpan]::Zero)
+        $taskZipEntry.LastWriteTime = [DateTimeOffset]::new(2026, 10, 26, 0, 0, 0, [TimeSpan]::Zero)
         $taskInput = [IO.File]::OpenRead((Join-Path $taskPackageRoot $taskName))
         $taskOutput = $taskZipEntry.Open()
         try { $taskInput.CopyTo($taskOutput) } finally { $taskInput.Dispose(); $taskOutput.Dispose() }

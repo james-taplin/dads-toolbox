@@ -32,14 +32,11 @@ namespace DadsToolbox.LocoSound
         public static double Area(double diameter, double length) => Valid(diameter) && Valid(length) ? Math.PI * diameter * length : 0;
         public static bool Matches(double area, double baseline) => Valid(area) && Valid(baseline) && Math.Abs(area - baseline) <= baseline * 0.01;
         public static bool Eligible(double area, double stock060, double stock282, bool stockIdentity, int stockSteamClips)
-            => !stockIdentity && stockSteamClips > 0 && Valid(area) && Valid(stock060) && Valid(stock282) && !Matches(area, stock060) && !Matches(area, stock282);
-        public static double Multiplier(double area, double baseline, double strength, double floor)
-        {
-            if (!Valid(area) || !Valid(baseline) || double.IsNaN(strength) || double.IsInfinity(strength)) return 1;
-            if (area <= baseline * 1.01 || strength <= 0) return 1;
-            floor = double.IsNaN(floor) || double.IsInfinity(floor) ? 0.25 : Math.Max(0.1, Math.Min(1, floor));
-            return Math.Max(floor, Math.Min(1, Math.Pow(area / baseline, -0.2 * Math.Min(10, strength))));
-        }
+            => !stockIdentity && stockSteamClips > 0 && Valid(area) && Valid(stock060) && Valid(stock282);
+        // Match size only against the selected sound donor. A CCL engine can
+        // match one stock boiler while borrowing sounds from the other.
+        public static double Multiplier(double area, double baseline, double strength, double floor, double ceiling = 2)
+            => MassMultiplier(area, baseline, strength, floor, ceiling);
         public static double MassMultiplier(double mass, double baseline, double strength, double floor, double ceiling)
         {
             if (!Valid(mass) || !Valid(baseline) || double.IsNaN(strength) || double.IsInfinity(strength)) return 1;

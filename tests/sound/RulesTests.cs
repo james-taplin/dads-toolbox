@@ -31,15 +31,25 @@ static class RulesTests
         Check(PitchRules.Area(0, 5) == 0 && PitchRules.Area(-2, 5) == 0, "invalid dimensions");
         Check(PitchRules.Area(double.NaN, 5) == 0 && PitchRules.Area(2, double.PositiveInfinity) == 0, "nonfinite dimensions");
         Check(!PitchRules.Eligible(400, 50, 100, true, 100), "stock identity protected even if dimensions changed");
-        Check(!PitchRules.Eligible(50, 50, 100, false, 100), "S060 size protected");
-        Check(!PitchRules.Eligible(100, 50, 100, false, 100), "S282 size protected with S060 clips");
-        Check(!PitchRules.Eligible(50.4, 50, 100, false, 100), "one percent matching tolerance");
+        Check(PitchRules.Eligible(50, 50, 100, false, 100), "custom S060-size boiler remains eligible for a different sound donor");
+        Check(PitchRules.Eligible(100, 50, 100, false, 100), "custom S282-size boiler remains eligible for S060 clips");
+        Check(PitchRules.Eligible(50.4, 50, 100, false, 100), "size tolerance is resolved per sound donor rather than excluding the whole locomotive");
         Check(!PitchRules.Eligible(400, 50, 100, false, 0), "custom-only audio protected");
         Check(!PitchRules.Eligible(400, 0, 100, false, 10), "missing baseline fails closed");
         Check(!PitchRules.Eligible(double.NaN, 50, 100, false, 10), "invalid boiler fails closed");
         Check(PitchRules.Eligible(150, 50, 100, false, 10), "larger mod with stock sounds eligible");
         Check(PitchRules.Multiplier(100, 100, 10, 0.1) == 1, "equal size unchanged even at extreme setting");
-        Check(PitchRules.Multiplier(50, 100, 10, 0.1) == 1, "smaller engine never pitched up");
+        Check(PitchRules.Multiplier(50, 100, 10, 0.1) == 2, "smaller boiler raises pitch up to default steam ceiling");
+        Check(Math.Abs(PitchRules.Multiplier(50, 100, 1, 0.25) - 1.1486983550) < 1e-9, "half donor boiler area raises steam pitch at 100 percent strength");
+        Check(PitchRules.Multiplier(99, 100, 10, .1) == 1 && PitchRules.Multiplier(101, 100, 10, .1) == 1, "equal-size tolerance is symmetric about actual boiler donor");
+        Check(PitchRules.Multiplier(98.9, 100, 1, .1) > 1 && PitchRules.Multiplier(101.1, 100, 1, .1) < 1, "outside tolerance steam pitch changes in the requested direction");
+        Check(PitchRules.Multiplier(50,100,0,.25,2)==1 && PitchRules.Multiplier(200,100,0,.25,2)==1,"zero-percent steam strength is neutral in both directions");
+        Check(PitchRules.Multiplier(1,1000,10,.25,1.1)==1.1 && PitchRules.Multiplier(1000,1,10,.9,2)==.9,"independent steam upper and lower caps bound the effect");
+        Check(PitchRules.Multiplier(44.5,47,6.4955945,.25,2)>1,"logged C48A boiler with S282 donor now pitches upward");
+        Check(PitchRules.Multiplier(47,47,6.4955945,.25,2)==1 && PitchRules.Multiplier(47,18.06,1,.25,2)<1,"L74 is neutral for S282 sounds and deeper for S060 sounds");
+        Check(PitchRules.Multiplier(1,1000,10,.1,double.NaN)==2 && PitchRules.Multiplier(1,1000,10,.1,double.PositiveInfinity)==2,"invalid steam ceiling uses default bound");
+        Check(PitchRules.Multiplier(1,1000,10,.1,-10)==1 && PitchRules.Multiplier(1,1000,10,.1,10)==3,"steam ceiling clamps to supported interval");
+        Check(PitchRules.Multiplier(double.MaxValue,double.Epsilon,10,.1,3)==.1 && PitchRules.Multiplier(double.Epsilon,double.MaxValue,10,.1,3)==3,"extreme steam ratios stay within finite pitch caps");
         Check(PitchRules.Multiplier(200, 100, 0, 0.1) == 1, "zero strength gives unmodified pitch");
         Check(Math.Abs(PitchRules.Multiplier(200, 100, 1, 0.25) - 0.8705505633) < 1e-9, "normal two-times size tuning");
         Check(Math.Abs(PitchRules.Multiplier(200, 100, 10, 0.1) - 0.25) < 1e-9, "extreme two-times size tuning");
@@ -84,13 +94,13 @@ static class RulesTests
             Check(multiplier <= previousMassPitch + 1e-12, "pitch falls monotonically as target mass increases");
             previousMassPitch = multiplier;
         }
-        for (double ratio = 1.02; ratio < 20; ratio += 0.2)
+        for (double ratio = .02; ratio < 20; ratio += 0.2)
         {
             double previous = 1;
             for (double strength = 0; strength <= 10; strength += 0.1)
             {
-                double multiplier = PitchRules.Multiplier(ratio, 1, strength, 0.1);
-                Check(multiplier <= previous + 1e-12 && multiplier >= 0.1 && multiplier <= 1, "strength monotonically lowers pitch within bounds");
+                double multiplier = PitchRules.Multiplier(ratio, 1, strength, 0.1, 3);
+                Check(multiplier >= .1 && multiplier <= 3 && (ratio < .99 ? multiplier >= previous - 1e-12 : multiplier <= previous + 1e-12), "steam strength monotonically changes pitch in the expected direction within both caps");
                 previous = multiplier;
             }
         }
@@ -117,7 +127,8 @@ static class RulesTests
         Check(PitchRules.NeedsRefresh(SoundKind.Ancillary, true, true, 0.5, 1), "exterior dynamo may shift using captured native input");
         Check(PitchRules.NeedsRefresh(SoundKind.Propulsion, true, true, 1.5, 1), "nonsteam propulsion may shift upward using captured native input");
         Check(!PitchRules.NeedsRefresh(SoundKind.CabEquipment, true, true, 0.5, 1), "cabin equipment remains excluded even when stock-owned and native input captured");
-        Check(!PitchRules.NeedsRefresh(SoundKind.Chuffs, true, true, 1, 1), "ALCo shared S282 sounds at ratio 0.60 cause zero manual pitch writes");
+        Check(PitchRules.NeedsRefresh(SoundKind.Chuffs, true, true, PitchRules.Multiplier(.60,1,1,.25), 1), "smaller boiler using shared S282 sounds refreshes captured native pitch upward");
+        Check(!PitchRules.NeedsRefresh(SoundKind.Chuffs, true, true, 1, 1), "only neutral donor scaling avoids manual pitch writes");
         Check(!PitchRules.NeedsRefresh(SoundKind.Chuffs, true, false, 0.8, 1), "first scan never invents a native pitch input");
         Check(!PitchRules.NeedsRefresh(SoundKind.Chuffs, false, true, 0.8, 0.8), "replacement ownership blocks restoration writes");
         Check(PitchRules.NeedsRefresh(SoundKind.Chuffs, true, true, 1, 0.8), "disable restores a previously adjusted sound");

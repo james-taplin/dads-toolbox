@@ -136,6 +136,89 @@ public static class NativeSoundChecks
     static void Refresh() => Call(engineType, "Refresh", new object[] { null });
     static void Discover(AudioFixture f) => Call(T("DadsToolbox.LocoSound.DirectAudio"), "Discover", f.engine, f.catalogue, new[] { f.car.gameObject });
 
+    static void DirectionalPitchChecks(AudioFixture f)
+    {
+        var donor=((IList)Get(f.catalogue,"Donors")).Cast<object>().Single(d=>(int)Get(d,"Mask")==1);
+        var clipInfo=((IDictionary)Get(f.catalogue,"Clips"))[f.clip];
+        var chuffs=Enum.Parse(T("DadsToolbox.LocoSound.SoundKind"),"Chuffs");
+        var maximum=options.GetType().GetField("MaximumPitch",BF);
+        Action<double,double,float> steam=(area,baseline,strength)=>{
+            Set(f.engine,"Steam",true); Set(f.engine,"Area",area); Set(donor,"Area",baseline);
+            Set(f.catalogue,"Area060",18.06d); Set(f.catalogue,"Area282",47d);
+            Set(options,"Strength",strength); Set(f.binding,"Kind",chuffs); Set(clipInfo,"Kind",chuffs);
+            ((IDictionary)Get(f.engine,"ResolvedDonors")).Clear();
+        };
+        try
+        {
+            steam(44.50,47,6.4955945f);
+            float c48=(float)Math.Pow(44.50/47,-.2*6.4955945f);
+            long writes=(long)Get(f.binding,"ShiftWrites"); Pitch(f);
+            Check(f.source.pitch>f.baseline && Near(f.source.pitch,f.baseline*c48) && (long)Get(f.binding,"ShiftWrites")==writes+1,
+                "C48A-sized boiler using S282 audio changes actual AudioSource pitch upward and records a write");
+            int firstAppliedLog=report.ToString().Split(new[]{"Applied pitch:"},StringSplitOptions.None).Length;
+            Check(firstAppliedLog>1,"completed native pitch write produces an applied-pitch diagnostic");
+            for(int i=0;i<20;i++)Pitch(f);
+            Check(Near(f.source.pitch,f.baseline*c48) && Near((float)Get(f.layer,"startPitch"),1.2f),"repeated upward steam calls preserve native baseline without compounding");
+            Check(report.ToString().Split(new[]{"Applied pitch:"},StringSplitOptions.None).Length==firstAppliedLog,"applied-pitch diagnostic is not repeated for every audio update");
+            Set(engineType,"Context",f.engine);
+            var shot=toolbox.GetType("DadsToolbox.LocoSound.OneShotPatch",true).GetMethod("Prefix",BF);
+            var args=new object[]{f.clip,null,null,1.5f};shot.Invoke(null,args);
+            Check(Near((float)args[3],1.5f*c48),"smaller steam boiler raises native one-shot pitch before scheduling");
+            steam(47,47,6.4955945f);writes=(long)Get(f.binding,"ShiftWrites");Pitch(f);
+            Check(Near(f.source.pitch,f.baseline) && (long)Get(f.binding,"ShiftWrites")==writes,"L74-sized boiler using S282 audio stays neutral with no pitch write");
+            steam(94,47,1);Pitch(f);
+            Check(f.source.pitch<f.baseline && Near(f.source.pitch,f.baseline*(float)Math.Pow(2,-.2)),"larger boiler lowers actual native steam layer pitch");
+            steam(18.06,47,1);Pitch(f);
+            Check(f.source.pitch>f.baseline,"matching S060 boiler size does not suppress an S282-donor upward adjustment");
+            steam(47,18.06,1);Pitch(f);
+            Check(f.source.pitch<f.baseline,"matching S282 boiler size does not suppress an S060-donor downward adjustment");
+            Check(maximum!=null,"steam upper pitch cap is independently configurable");
+            if(maximum!=null)
+            {
+                maximum.SetValue(options,1.1f);steam(5,47,10);Pitch(f);
+                Check(Near(f.source.pitch,f.baseline*1.1f),"steam upper cap limits actual upward pitch writes");
+                Set(options,"MinimumPitch",.8f);steam(470,47,10);Pitch(f);
+                Check(Near(f.source.pitch,f.baseline*.8f),"steam lower cap limits actual downward pitch writes");
+                Set(options,"MinimumPitch",.25f);maximum.SetValue(options,2f);
+                steam(44.50,47,0);Pitch(f);
+                Check(Near(f.source.pitch,f.baseline),"zero-percent steam strength restores native pitch");
+                steam(44.50,47,1);Pitch(f);float normal=f.source.pitch;
+                Set(options,"Strength",.5f);Refresh();
+                Check(f.source.pitch>f.baseline && f.source.pitch<normal,"steam strength edits refresh captured input at the reduced percentage");
+                steam(44.50,47,1);Pitch(f);Discover(f);
+                Check(f.direct.pitch>1.1f,"smaller boiler also raises owned direct AudioSource pitch");
+                Set(options,"Strength",0f);Refresh();
+                Check(Near(f.source.pitch,f.baseline) && Near(f.direct.pitch,1.1f),"zero steam strength restores both layered and direct sources");
+                steam(47,47,1);Set(f.engine,"Stock",true);Pitch(f);
+                Check(Near(f.source.pitch,f.baseline),"real vanilla identity remains protected with bidirectional steam scaling");
+                Set(f.engine,"Stock",false);
+                steam(44.50,47,1);f.source.clip=f.custom;Pitch(f);
+                Check(Near(f.source.pitch,f.baseline),"custom replacement stays excluded from upward steam scaling");
+                f.source.clip=f.clip;Set(f.binding,"Kind",Enum.Parse(T("DadsToolbox.LocoSound.SoundKind"),"CabEquipment"));Pitch(f);
+                Check(Near(f.source.pitch,f.baseline),"cab-equipment exclusion also prevents upward steam writes");
+            }
+            Set(f.binding,"Kind",chuffs);
+            Set(f.engine,"Steam",false);Set(f.engine,"Mass",50d);Set(donor,"Area",0d);
+            Set(options,"NonSteamStrength",1f);Set(options,"NonSteamMaximumPitch",1.1f);Pitch(f);
+            Check(Near(f.source.pitch,f.baseline*1.1f),"lighter diesel receives actual upward pitch bounded by its upper cap");
+            Set(f.engine,"Mass",200d);Set(options,"NonSteamMinimumPitch",.9f);Pitch(f);
+            Check(Near(f.source.pitch,f.baseline*.9f),"heavier diesel receives actual downward pitch bounded by its lower cap");
+            Set(f.engine,"Mass",100d);Pitch(f);
+            Check(Near(f.source.pitch,f.baseline),"diesel matching its actual sound donor mass remains neutral");
+            Set(f.engine,"Mass",50d);Set(options,"NonSteamMaximumPitch",2f);Set(options,"NonSteamStrength",0f);Pitch(f);
+            Check(Near(f.source.pitch,f.baseline),"zero-percent diesel strength restores actual native pitch");
+        }
+        finally
+        {
+            Set(engineType,"Context",null);Set(f.engine,"Steam",false);Set(f.engine,"Mass",200d);Set(f.engine,"Stock",false);
+            Set(donor,"Area",0d);Set(options,"Strength",1f);Set(options,"MinimumPitch",.25f);if(maximum!=null)maximum.SetValue(options,2f);
+            Set(options,"NonSteamStrength",1f);Set(options,"NonSteamMinimumPitch",.25f);Set(options,"NonSteamMaximumPitch",2f);
+            Set(f.binding,"Kind",Enum.Parse(T("DadsToolbox.LocoSound.SoundKind"),"Unknown"));Set(clipInfo,"Kind",Enum.Parse(T("DadsToolbox.LocoSound.SoundKind"),"Unknown"));
+            f.source.clip=f.clip;((IDictionary)Get(f.engine,"ResolvedDonors")).Clear();Refresh();
+            Call(T("DadsToolbox.LocoSound.DirectAudio"),"Clear",true);
+        }
+    }
+
     public static void Run() { EditorApplication.update += Start; }
     static void Start()
     {
@@ -182,6 +265,7 @@ public static class NativeSoundChecks
             Check(ticks == 3 && pending == 7, "parent frame dispatcher keeps quarterly discovery cadence and one pending dispatch per update");
             Unpatch(clock, "dads-toolbox-fixture.sound-clock");
             var f = CreateAudio();
+            DirectionalPitchChecks(f);
             float factor = (float)Math.Pow(2, -.2);
             Set(engineType, "Context", f.engine);
             var oneShot = toolbox.GetType("DadsToolbox.LocoSound.OneShotPatch", true).GetMethod("Prefix", BF);

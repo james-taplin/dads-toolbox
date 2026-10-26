@@ -35,8 +35,6 @@ namespace DadsToolbox.LocoSound
         private static readonly List<Engine> Engines = new List<Engine>();
         private static readonly HashSet<LayeredAudio> Layered = new HashSet<LayeredAudio>();
         private static readonly HashSet<string> Logged = new HashSet<string>();
-        private static double area060 => Catalogue.Area060;
-        private static double area282 => Catalogue.Area282;
         private static bool referencesReady;
         private static bool dirty = true;
         private static float nextReferenceRetry;
@@ -81,21 +79,24 @@ namespace DadsToolbox.LocoSound
         {
             bool before = GUI.changed;
             GUI.changed = false;
-            GUILayout.Label("Steam: boiler barrel area. Larger than the vanilla sound donor = lower pitch.");
-            GUILayout.Label($"Steam strength: {Config.Strength:F2}x   (0 = unchanged, 1 = normal, 10 = extreme)");
+            GUILayout.Label("Steam: boiler barrel area. Smaller than the sound donor = higher pitch; larger = lower.");
+            GUILayout.Label($"Steam effect strength: {Config.Strength * 100:F1}%   (0% = unchanged; 100% = normal)");
             Config.Strength = GUILayout.HorizontalSlider(Config.Strength, 0, 10);
             GUILayout.BeginHorizontal();
             Preset("Off", 0); Preset("Subtle", 0.15f); Preset("Normal", 1); Preset("Strong", 3); Preset("Extreme", 10);
             GUILayout.EndHorizontal();
-            GUILayout.Label($"Pitch floor: {Config.MinimumPitch:F2}x original   (lower allows a deeper effect)");
+            GUILayout.Label($"Steam lower pitch cap: {Config.MinimumPitch * 100:F0}% of original");
             Config.MinimumPitch = GUILayout.HorizontalSlider(Config.MinimumPitch, 0.1f, 1);
-            GUILayout.Label($"Example for twice the donor's barrel area: {PitchRules.Multiplier(2, 1, Config.Strength, Config.MinimumPitch):F3}x pitch");
+            GUILayout.Label($"Steam upper pitch cap: {Config.MaximumPitch * 100:F0}% of original");
+            Config.MaximumPitch = GUILayout.HorizontalSlider(Config.MaximumPitch, 1, 3);
+            GUILayout.Label($"Half / twice donor boiler area: {PitchRules.Multiplier(.5, 1, Config.Strength, Config.MinimumPitch, Config.MaximumPitch):F3}x / {PitchRules.Multiplier(2, 1, Config.Strength, Config.MinimumPitch, Config.MaximumPitch):F3}x pitch");
             GUILayout.Space(8);
             GUILayout.Label("Diesel / hydraulic / mechanical / electric: configured empty locomotive mass.");
-            GUILayout.Label($"Non-steam strength: {Config.NonSteamStrength:F2}x   (heavier = deeper; lighter = higher)");
+            GUILayout.Label($"Diesel / non-steam effect strength: {Config.NonSteamStrength * 100:F1}%   (heavier = lower; lighter = higher)");
             Config.NonSteamStrength = GUILayout.HorizontalSlider(Config.NonSteamStrength, 0, 10);
-            GUILayout.Label($"Non-steam pitch limits: {Config.NonSteamMinimumPitch:F2}x to {Config.NonSteamMaximumPitch:F2}x original");
+            GUILayout.Label($"Diesel / non-steam lower pitch cap: {Config.NonSteamMinimumPitch * 100:F0}% of original");
             Config.NonSteamMinimumPitch = GUILayout.HorizontalSlider(Config.NonSteamMinimumPitch, 0.1f, 1);
+            GUILayout.Label($"Diesel / non-steam upper pitch cap: {Config.NonSteamMaximumPitch * 100:F0}% of original");
             Config.NonSteamMaximumPitch = GUILayout.HorizontalSlider(Config.NonSteamMaximumPitch, 1, 3);
             GUILayout.Label($"Half / twice donor mass: {PitchRules.MassMultiplier(0.5, 1, Config.NonSteamStrength, Config.NonSteamMinimumPitch, Config.NonSteamMaximumPitch):F3}x / {PitchRules.MassMultiplier(2, 1, Config.NonSteamStrength, Config.NonSteamMinimumPitch, Config.NonSteamMaximumPitch):F3}x pitch");
             GUILayout.Space(8);
@@ -425,10 +426,9 @@ namespace DadsToolbox.LocoSound
             {
                 if (donor.Area > 0)
                 {
-                    if (PitchRules.Matches(engine.Area, area060) || PitchRules.Matches(engine.Area, area282)) return 1;
-                    return (float)PitchRules.Multiplier(engine.Area, donor.Area, Config.Strength, Config.MinimumPitch);
+                    return (float)PitchRules.Multiplier(engine.Area, donor.Area, Config.Strength, Config.MinimumPitch, Config.MaximumPitch);
                 }
-                return (float)PitchRules.MassMultiplier(engine.Mass, donor.Mass, Config.Strength, Config.MinimumPitch, 1);
+                return (float)PitchRules.MassMultiplier(engine.Mass, donor.Mass, Config.Strength, Config.MinimumPitch, Config.MaximumPitch);
             }
             return (float)PitchRules.MassMultiplier(engine.Mass, donor.Mass, Config.NonSteamStrength, Config.NonSteamMinimumPitch, Config.NonSteamMaximumPitch);
         }
@@ -605,7 +605,7 @@ namespace DadsToolbox.LocoSound
                 var sb = new StringBuilder();
                 sb.AppendLine(DateTime.Now.ToString("O")).AppendLine(status);
                 sb.AppendLine("Incompatible with Zeibach's Sounds (ZSounds).");
-                sb.AppendLine($"Enabled={Enabled}; strength={Config.Strength}; floor={Config.MinimumPitch}; allSounds={Config.AllSounds}; sharedDonor={Config.SharedDonor}");
+                sb.AppendLine($"Enabled={Enabled}; strength={Config.Strength}; floor={Config.MinimumPitch}; ceiling={Config.MaximumPitch}; allSounds={Config.AllSounds}; sharedDonor={Config.SharedDonor}");
                 sb.AppendLine($"NonSteamStrength={Config.NonSteamStrength}; floor={Config.NonSteamMinimumPitch}; ceiling={Config.NonSteamMaximumPitch}");
                 foreach (var donor in Catalogue.Donors) sb.AppendLine($"Donor {donor.Mask}: {donor.Id}; mass={donor.Mass:F2}kg; barrelArea={donor.Area:F2}m²");
                 foreach (var engine in Engines) sb.AppendLine(Describe(engine));
@@ -628,7 +628,7 @@ namespace DadsToolbox.LocoSound
         internal sealed class Engine
         {
             public TrainCar Car; public TrainAudio Audio; public double Area, Mass;
-            public bool Stock, Steam, Ambiguous; public int StockClips, LayerCount;
+            public bool Stock, Steam, Ambiguous, PitchLogged; public int StockClips, LayerCount;
             public readonly Dictionary<int, int> Votes = new Dictionary<int, int>();
             public readonly Dictionary<long, StockAudio.Donor> ResolvedDonors = new Dictionary<long, StockAudio.Donor>();
             public readonly Dictionary<Component, ContextMetadata> Callers = new Dictionary<Component, ContextMetadata>();
@@ -641,6 +641,13 @@ namespace DadsToolbox.LocoSound
         {
             if (!CanTouchLayer(layer, binding)) return 1;
             return Factor(binding.Engine, binding.Donors, binding.Kind, binding.Loop, binding.ModuleDonors);
+        }
+        internal static void LogAppliedPitch(LayeredAudio.Layer layer)
+        {
+            if (!Enabled || Restoring || !Layers.TryGetValue(layer, out var b) ||
+                b.Engine.PitchLogged || b.AppliedMultiplier == 1 || !layer.source) return;
+            b.Engine.PitchLogged = true;
+            Log($"Applied pitch: {b.Engine.Car?.carLivery?.id}; clip={layer.source.clip?.name}; multiplier={b.AppliedMultiplier:F4}x; AudioSource pitch={layer.source.pitch:F4}.");
         }
         private static bool CanTouchLayer(LayeredAudio.Layer layer, Binding binding)
         {
@@ -744,6 +751,8 @@ namespace DadsToolbox.LocoSound
                 __instance.startPitch *= factor;
             }
         }
+        private static void Postfix(LayeredAudio.Layer __instance, float? __state, bool __runOriginal)
+        { if (__state.HasValue && __runOriginal) SoundEngine.LogAppliedPitch(__instance); }
         private static void Finalizer(LayeredAudio.Layer __instance, float? __state) { if (__state.HasValue) __instance.startPitch = __state.Value; }
     }
     [HarmonyPatch]

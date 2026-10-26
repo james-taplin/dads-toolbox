@@ -76,6 +76,6 @@ $taskReceipt = [ordered]@{
     passed = $taskNativeCount + $taskRuleCount
     failed = 0
     exitCode = 0
-    scope = 'Source-linked preserved rules plus exact-DLL native Unity audio hook, ownership and lifecycle fixtures. Seeded catalogue and controlled inactive car. No game boot, discovery, audible playback or performance acceptance.'
+    scope = 'Source-linked bidirectional steam boiler-area/non-steam mass rules plus exact-DLL native AudioSource/one-shot pitch writes, caps, strength, ownership and lifecycle fixtures. Seeded catalogue and controlled inactive car. No game boot, real pack discovery, audible playback or performance acceptance.'
 }
 $taskReceipt | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $taskEvidence 'receipt.json') -Encoding utf8

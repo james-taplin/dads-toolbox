@@ -80,11 +80,14 @@ public static class CombinedChecks
         var soundField = typeof(ToolboxSettings).GetField("Sound");
         object soundOptions = soundField.GetValue(old);
         Check(soundOptions != null, "old settings create nested sound options");
+        Check((float)Get(soundOptions,"MaximumPitch")==2f,"older XML receives a default steam upper cap without resetting strength");
+        Set(soundOptions,"MaximumPitch",1.65f);
         Set(soundOptions, "Strength", 3.5f); Set(soundOptions, "MinimumPitch", .43f);
         Set(soundOptions, "NonSteamStrength", 2.5f); Set(soundOptions, "NonSteamMinimumPitch", .38f); Set(soundOptions, "NonSteamMaximumPitch", 1.8f);
         Set(soundOptions, "Chuffs", false); Set(soundOptions, "Whistle", false); Set(soundOptions, "SharedDonor", 1);
         old.Save(parent);
         var nested = UnityModManager.ModSettings.Load<ToolboxSettings>(parent); object soundAgain = soundField.GetValue(nested);
+        Check((float)Get(soundAgain,"MaximumPitch")==1.65f,"new steam upper cap survives native UMM XML save and reload");
         Check((float)Get(soundAgain, "Strength") == 3.5f && (float)Get(soundAgain, "MinimumPitch") == .43f && !(bool)Get(soundAgain, "Chuffs") && !(bool)Get(soundAgain, "Whistle"), "shared XML preserves existing steam strength/minimum and group choices");
         Check((float)Get(soundAgain, "NonSteamStrength") == 2.5f && (float)Get(soundAgain, "NonSteamMinimumPitch") == .38f && (float)Get(soundAgain, "NonSteamMaximumPitch") == 1.8f && (int)Get(soundAgain, "SharedDonor") == 1, "shared XML preserves independent non-steam sound options");
         soundField.SetValue(nested, null); nested.Normalize();

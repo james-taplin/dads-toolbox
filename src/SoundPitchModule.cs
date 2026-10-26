@@ -13,6 +13,7 @@ namespace DadsToolbox.LocoSound
     {
         public float Strength = 1;
         public float MinimumPitch = 0.25f;
+        public float MaximumPitch = 2;
         public float NonSteamStrength = 1;
         public float NonSteamMinimumPitch = 0.25f;
         public float NonSteamMaximumPitch = 2;
@@ -27,6 +28,7 @@ namespace DadsToolbox.LocoSound
         {
             Strength = Safe(Strength, 1, 0, 10);
             MinimumPitch = Safe(MinimumPitch, 0.25f, 0.1f, 1);
+            MaximumPitch = Safe(MaximumPitch, 2, 1, 3);
             NonSteamStrength = Safe(NonSteamStrength, 1, 0, 10);
             NonSteamMinimumPitch = Safe(NonSteamMinimumPitch, 0.25f, 0.1f, 1);
             NonSteamMaximumPitch = Safe(NonSteamMaximumPitch, 2, 1, 3);

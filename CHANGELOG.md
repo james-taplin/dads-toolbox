@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.4-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.4-dev) — 26 October 2026
+
+- Fixed steam pitch scaling: smaller boilers pitch sounds up and larger boilers pitch them down, relative to the sound donor.
+- Added a steam upper pitch cap. Steam and diesel settings now show lower/upper caps and effect strength as percentages.
+- Added a one-time log message when a layered sound actually receives a pitch adjustment.
+
 ## [0.4.3-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.3-dev) — 23 October 2026
 
 - Fixed sign clearance stopping during world reloads. It now waits for the railway to load and resumes automatically.
