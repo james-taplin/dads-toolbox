@@ -79,6 +79,8 @@ namespace DadsToolbox.LocoSound
         private bool parentActive;
         private bool unloaded;
         private bool faulted;
+        private bool compatibilityChecked;
+        private string lastAvailability;
         private float nextTick;
         private string status = "Off";
         public bool DesiredEnabled { get; private set; }
@@ -100,13 +102,25 @@ namespace DadsToolbox.LocoSound
             if (unloaded) return;
             DesiredEnabled = desired;
             parentActive = actualParentActive;
-            if (!desired || !actualParentActive)
+            Reconcile(true);
+        }
+
+        private void Reconcile(bool validateOwnership)
+        {
+            if (!DesiredEnabled || !parentActive)
             {
-                if (StopCore()) SetStatus(actualParentActive ? "Off" : "Toolbox disabled");
+                compatibilityChecked = false;
+                if (StopCore()) SetStatus(parentActive ? "Off" : "Toolbox disabled");
                 return;
             }
             if (faulted) return;
-            string conflict = Conflict();
+            string availability = Availability();
+            // Poll cheap dependency state, not Harmony's entire patch registry.
+            // Stable waiting/blocked states also need no repeated cleanup sweep.
+            if (!validateOwnership && compatibilityChecked && availability == lastAvailability) return;
+            lastAvailability = availability;
+            compatibilityChecked = true;
+            string conflict = availability ?? ResidualConflict();
             if (conflict != null)
             { if (StopCore()) SetStatus("Inactive: " + conflict); return; }
             if (Active) return;
@@ -119,7 +133,7 @@ namespace DadsToolbox.LocoSound
             if (realtime >= nextTick)
             {
                 nextTick = realtime + 0.25f;
-                Configure(DesiredEnabled, parentActive);
+                Reconcile(false);
                 if (Active) SoundEngine.Tick();
             }
             if (Active) SoundEngine.ProcessPending();
@@ -233,13 +247,21 @@ namespace DadsToolbox.LocoSound
             return true;
         }
 
-        private string Conflict()
+        private string Availability()
         {
             try
             {
                 if (conflictReason == null) return "sound compatibility probe is unavailable.";
                 string reason = conflictReason();
-                if (!string.IsNullOrEmpty(reason)) return reason;
+                return string.IsNullOrEmpty(reason) ? null : reason;
+            }
+            catch (Exception ex) { return "sound compatibility check failed: " + ex.Message; }
+        }
+
+        private string ResidualConflict()
+        {
+            try
+            {
                 if (Harmony.GetAllPatchedMethods().Any(method => Harmony.GetPatchInfo(method)?.Owners.Contains(StandaloneId) == true))
                     return "standalone SteamSizePitch patches remain loaded. Disable/remove it and restart.";
                 return null;

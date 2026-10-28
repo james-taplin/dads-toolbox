@@ -13,6 +13,7 @@ internal static class LifecycleChecks
 {
     private static string managed, toolbox, output;
     private static int passed, failed;
+    private static int patchEnumerations, patchMetadataReads;
     private static readonly List<string> checks = new List<string>();
     public static int Main(string[] args)
     {
@@ -50,6 +51,7 @@ internal static class LifecycleChecks
         Check(originals.All(m=>m.DeclaringType.Assembly.GetName().Name=="Assembly-CSharp"),"all control targets belong to installed native game assembly");
         module.Configure(true,true); module.Refresh();
         Check(OwnedPatchCount(ControlsModule.HarmonyOwner)==6,"repeat configure and refresh install no duplicate prefix or postfix");
+        CheckPollingMetadata(module,ccl);
         var duplicate=new ControlsModule(_=>{throw new Exception("logger failure");}); duplicate.Configure(true,true);
         Check(!duplicate.Active && duplicate.Status.Contains("another"),"duplicate module lifetime is refused despite logger faults");
         Check(duplicate.Stop() && duplicate.Unload() && module.Active,"refused duplicate cleanup cannot stop valid owner");
@@ -80,6 +82,8 @@ internal static class LifecycleChecks
         Check(OwnedPatchCount(ControlsModule.HarmonyOwner)==0 && Harmony.GetPatchInfo(sentinel).Owners.Contains(foreign.Id),"partial installation rolls back only owned patches");
         types[2]=saved; partial.Refresh(); Check(partial.Active,"explicit retry after corrected patch failure recovers"); partial.Unload();
 
+        CheckResidualOwnerBoundaries(sentinel);
+
         // Conflict checks run last because a loaded standalone intentionally
         // establishes a process-wide restart boundary.
         var neverLoaded=Entry(ControlsModule.StandaloneModId,false,false); neverLoaded.Enabled=true;
@@ -101,6 +105,90 @@ internal static class LifecycleChecks
         return failed==0?0:1;
     }
     public static void Prefix() { }
+    public static void CountPatchEnumeration() { patchEnumerations++; }
+    public static void CountPatchMetadata() { patchMetadataReads++; }
+    private static void Poll(ControlsModule module)
+    {
+        Set(module,"nextProbe",0d); // Exercise every scheduled poll without sleeping.
+        module.Tick();
+    }
+    private static void CheckPollingMetadata(ControlsModule module,UnityModManager.ModEntry ccl)
+    {
+        // Patch the underlying lock-protected implementations, not Harmony's
+        // tiny forwarding wrappers which may already have been JIT-inlined.
+        const string observerId="toolbox.controls.fixture.metadata-observer";
+        var observer=new Harmony(observerId);
+        var flags=BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static;
+        var enumerate=typeof(PatchProcessor).GetMethod("GetAllPatchedMethods",flags);
+        var metadata=typeof(PatchProcessor).GetMethod("GetPatchInfo",flags,null,new[]{typeof(MethodBase)},null);
+        observer.Patch(enumerate,prefix:new HarmonyMethod(typeof(LifecycleChecks).GetMethod("CountPatchEnumeration")));
+        observer.Patch(metadata,prefix:new HarmonyMethod(typeof(LifecycleChecks).GetMethod("CountPatchMetadata")));
+        try
+        {
+            patchEnumerations=patchMetadataReads=0;
+            for(int i=0;i<128;i++)Poll(module);
+            Check(module.Active && patchEnumerations==0 && patchMetadataReads==0,
+                "128 steady active control polls perform zero global patch enumerations and zero patch-info reads");
+            module.Configure(true,true);
+            Check(module.Active && patchEnumerations>0 && patchMetadataReads>0,
+                "explicit control configure validates residual ownership even when selected values are unchanged");
+            patchEnumerations=patchMetadataReads=0; module.Refresh();
+            Check(module.Active && patchEnumerations>0 && patchMetadataReads>0,
+                "explicit control retry/refresh reconciles global ownership without duplicating hooks");
+            Set(ccl,"mActive",false); patchEnumerations=patchMetadataReads=0; Poll(module);
+            Check(!module.Active && patchEnumerations>0,
+                "cheap polled CCL disappearance still performs owned teardown verification");
+            patchEnumerations=patchMetadataReads=0;
+            for(int i=0;i<32;i++)Poll(module);
+            Check(!module.Active && patchEnumerations==0 && patchMetadataReads==0,
+                "stable missing-CCL control polls do not repeat negative metadata scans");
+            Set(ccl,"mActive",true); patchEnumerations=patchMetadataReads=0; Poll(module);
+            Check(module.Active && patchEnumerations>0 && patchMetadataReads>0,
+                "late CCL reactivation is a full ownership-validation boundary before control hooks return");
+            patchEnumerations=patchMetadataReads=0;
+            for(int i=0;i<64;i++)Poll(module);
+            Check(module.Active && patchEnumerations==0 && patchMetadataReads==0,
+                "restored active controls return to metadata-free steady polling");
+            var replacement=Entry(ControlsModule.DependencyId,true,true);
+            UnityModManager.modEntries.Remove(ccl); UnityModManager.modEntries.Add(replacement);
+            patchEnumerations=patchMetadataReads=0; Poll(module);
+            Check(module.Active && patchEnumerations>0,
+                "replacement active CCL entry triggers ownership reconciliation even without a toggle event");
+            UnityModManager.modEntries.Remove(replacement); UnityModManager.modEntries.Add(ccl); Poll(module);
+        }
+        finally
+        {
+            observer.Unpatch(enumerate,HarmonyPatchType.All,observerId);
+            observer.Unpatch(metadata,HarmonyPatchType.All,observerId);
+        }
+    }
+    private static void CheckResidualOwnerBoundaries(MethodInfo sentinel)
+    {
+        var legacy=new Harmony(ControlsModule.StandaloneModId);
+        var hook=new HarmonyMethod(typeof(LifecycleChecks).GetMethod("Prefix"));
+        var cold=new ControlsModule(_=>{});
+        legacy.Patch(sentinel,prefix:hook);
+        cold.Configure(true,true);
+        Check(!cold.Active && cold.RestartRequired && cold.Status.Contains("restart"),
+            "cold control activation detects residual standalone ownership without any UMM standalone entry");
+        legacy.Unpatch(sentinel,HarmonyPatchType.All,ControlsModule.StandaloneModId);
+        cold.Refresh();
+        Check(!cold.Active,"removing residual standalone patches cannot bypass the restart boundary"); cold.Unload();
+        // Simulate another cold process between independent restart-boundary
+        // scenarios. Production never clears this process-wide safety latch.
+        typeof(ControlsModule).GetField("standaloneApplied",BindingFlags.NonPublic|BindingFlags.Static).SetValue(null,false);
+        var late=new ControlsModule(_=>{}); late.Configure(true,true);
+        Check(late.Active,"isolated clean lifetime starts before a late residual ownership test");
+        legacy.Patch(sentinel,prefix:hook);
+        late.Refresh();
+        Check(!late.Active && late.RestartRequired && late.Status.Contains("restart"),
+            "explicit control refresh detects late residual standalone ownership and stops only its own hooks");
+        Check(Harmony.GetPatchInfo(sentinel).Owners.Contains(ControlsModule.StandaloneModId) &&
+            Harmony.GetPatchInfo(sentinel).Owners.Contains("toolbox.controls.fixture.foreign"),
+            "residual control conflict cleanup preserves both standalone and unrelated owners");
+        legacy.Unpatch(sentinel,HarmonyPatchType.All,ControlsModule.StandaloneModId); late.Unload();
+        typeof(ControlsModule).GetField("standaloneApplied",BindingFlags.NonPublic|BindingFlags.Static).SetValue(null,false);
+    }
     private static void CheckCloning()
     {
         UnityEngine.GameObject prefab=null, clone=null;

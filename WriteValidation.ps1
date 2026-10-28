@@ -87,7 +87,7 @@ foreach ($taskSuite in @('combined','hud','smoke','controls','sound')) {
 $taskAdditionalPassed = 0
 foreach ($taskCheck in $taskAdditional) { $taskAdditionalPassed += [int]$taskCheck['passed'] }
 $taskValidation = [ordered]@{
-    date = '2026-10-26'; package = 'DadsToolbox'; version = $taskInfo.Version; status = 'development candidate; isolated integration verified; live-world acceptance pending'
+    date = '2026-10-28'; package = 'DadsToolbox'; version = $taskInfo.Version; status = 'development candidate; isolated integration verified; live-world acceptance pending'
     binarySha256 = $taskHash; passed = $taskManagedPassed + $taskNativePassed + $taskSignsPassed + $taskRegistrationPassed + $taskAdditionalPassed; failed = 0
     modules = @('SkinDamageFix','SkinRegistrationFix','DoubleTrackSigns','HudGuard','CclControlFix','LocoSoundPitch','SmokeFix')
     features = @('HUD Guard','CCL Control Fix','Loco Sound Pitch','Skin Manager Fix','CCL Smoke Fix','DoubleTrack sign clearance')

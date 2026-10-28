@@ -16,6 +16,8 @@ public static class CombinedChecks
 {
     static string managed, toolbox, output;
     static int passed, failed;
+    static int controlConfigureCalls;
+    static void CountControlConfigure() { controlConfigureCalls++; }
     static readonly List<string> report = new List<string>();
     static readonly string[] Flags = { "SkinDamageFix", "SkinRegistrationFix", "DoubleTrackSignClearance", "HudGuard", "CclControlFix", "LocoSoundPitch", "SmokeFix" };
     static readonly string[] ModuleFields = { "skinDamage", "skinRegistration", "signs", "hud", "controls", "sound", "smoke" };
@@ -105,6 +107,15 @@ public static class CombinedChecks
             Check(new Delegate[] { parent.OnGUI, parent.OnSaveGUI, parent.OnToggle, parent.OnUnload, parent.OnUpdate }.All(d => d.Method.DeclaringType == typeof(DadsToolbox.Main)), "module loaders have not replaced parent callbacks");
             Check(ParentSubscriptions() == 1, "one parent dependency event subscription");
             Check(ToolboxPatchCount() == 0, "off modules install no Toolbox Harmony patches");
+            var updateObserver=new Harmony("fixture.dadstoolbox.combined.update");
+            updateObserver.Patch(snapshots["controls"].GetType().GetMethod("Configure"),prefix:new HarmonyMethod(typeof(CombinedChecks).GetMethod("CountControlConfigure",BF)));
+            try
+            {
+                controlConfigureCalls=0;
+                parent.OnUpdate(parent,0);parent.OnUpdate(parent,0);
+                Check(controlConfigureCalls==0,"parent Update does not force Controls compatibility reconciliation every frame");
+            }
+            finally {updateObserver.UnpatchAll(updateObserver.Id);}
             Check(parent.OnToggle(parent, false), "parent disable cleanup succeeds for all modules");
             // Desired choices can all change while the parent is disabled.
             var current = (ToolboxSettings)ParentField("settings");

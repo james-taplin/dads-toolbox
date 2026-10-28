@@ -25,6 +25,12 @@ public static class NativeSoundChecks
     static readonly StringBuilder report = new StringBuilder();
     static int checks, failures;
     static int ticks, pending;
+    static bool countMetadata;
+    static int patchSnapshots, patchReads;
+    static void CountPatchSnapshot() { if(countMetadata)patchSnapshots++; }
+    static void CountPatchRead() { if(countMetadata)patchReads++; }
+    static void MetadataStart() { patchSnapshots=patchReads=0;countMetadata=true; }
+    static int MetadataStop() { countMetadata=false;return patchSnapshots+patchReads; }
     static string output;
     static readonly List<object> foreign = new List<object>();
 
@@ -261,8 +267,31 @@ public static class NativeSoundChecks
             Check((bool)Call(duplicate, "Unload") && OwnedMethods(Owner).Length == 20, "unloading rejected duplicate preserves first owner");
             var clock = Prefix("dads-toolbox-fixture.sound-clock", engineType.GetMethod("Tick", BF), "ClockTick");
             Prefix("dads-toolbox-fixture.sound-clock", engineType.GetMethod("ProcessPending", BF), "ClockPending");
+            var processor=harmony.GetType("HarmonyLib.PatchProcessor",true);
+            var metadataCounter=Prefix("dads-toolbox-fixture.sound-metadata",processor.GetMethod("GetAllPatchedMethods",BF),"CountPatchSnapshot");
+            Prefix("dads-toolbox-fixture.sound-metadata",processor.GetMethod("GetPatchInfo",BF),"CountPatchRead");
+            MetadataStart();
             foreach (float now in new[] { 0f, .05f, .1f, .24f, .25f, .3f, .5f }) Call(module, "Tick", now);
+            int stableReads=MetadataStop();
             Check(ticks == 3 && pending == 7, "parent frame dispatcher keeps quarterly discovery cadence and one pending dispatch per update");
+            Check(stableReads==0,"stable active sound ticks perform zero Harmony registry snapshots or patch-info reads");
+            MetadataStart();Call(module,"Refresh");int refreshReads=MetadataStop();
+            Check(Active(module) && refreshReads>0,"explicit refresh still fully reconciles residual Harmony ownership");
+            conflict="CCL is temporarily unavailable";
+            MetadataStart();Call(module,"Tick",1f);int lostReads=MetadataStop();
+            Check(!Active(module) && lostReads>0,"cheap dependency loss stops sound and verifies patch cleanup");
+            MetadataStart();foreach(float now in new[]{1.25f,1.5f,1.75f})Call(module,"Tick",now);int blockedReads=MetadataStop();
+            Check(blockedReads==0,"unchanged waiting state does not repeatedly sweep retained ownership or cleanup metadata");
+            conflict=null;MetadataStart();Call(module,"Tick",2f);int readyReads=MetadataStop();
+            Check(Active(module) && readyReads>0,"late dependency readiness revalidates ownership and activates sound");
+            var lateStandalone=ForeignPatch("SteamSizePitch",T("LayeredAudio+Layer").GetMethod("SetPitch",BF));
+            MetadataStart();Call(module,"Refresh");int residualReads=MetadataStop();
+            Check(!Active(module) && residualReads>0 && OwnedMethods("SteamSizePitch").Length==1,"retry detects silent residual standalone patches while preserving the foreign owner");
+            MetadataStart();foreach(float now in new[]{3f,3.25f,3.5f})Call(module,"Tick",now);int residualWaitReads=MetadataStop();
+            Check(residualWaitReads==0,"residual-owner blocked sound performs no global scan on stable polling ticks");
+            Unpatch(lateStandalone,"SteamSizePitch");Call(module,"Refresh");
+            Check(Active(module),"explicit retry after residual removal restores normal sound updates");
+            Unpatch(metadataCounter,"dads-toolbox-fixture.sound-metadata");
             Unpatch(clock, "dads-toolbox-fixture.sound-clock");
             var f = CreateAudio();
             DirectionalPitchChecks(f);
@@ -350,7 +379,8 @@ public static class NativeSoundChecks
         finally
         {
             try { if (module != null) Call(module, "Unload"); } catch (Exception ex) { report.AppendLine("CLEANUP " + ex); failures++; }
-            foreach (var id in new[] { Owner, Other, "SteamSizePitch", "dads-toolbox-fixture.sound-clock", "dads-toolbox-fixture.sound-throw" })
+            countMetadata=false;
+            foreach (var id in new[] { Owner, Other, "SteamSizePitch", "dads-toolbox-fixture.sound-clock", "dads-toolbox-fixture.sound-throw", "dads-toolbox-fixture.sound-metadata" })
                 try { if (harmony != null) Unpatch(Activator.CreateInstance(harmony.GetType("HarmonyLib.Harmony"), id), id); } catch { }
             foreach (var obj in objects.AsEnumerable().Reverse()) if (obj) Object.DestroyImmediate(obj);
             report.AppendLine("Checks: " + checks + "; failures: " + failures);

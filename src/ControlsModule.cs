@@ -29,7 +29,10 @@ namespace DadsToolbox.CclControls
         private readonly Action<string> logger;
         private readonly Stopwatch clock = Stopwatch.StartNew();
         private Harmony harmony;
-        private bool parentActive, unloaded, faulted, configured;
+        private bool parentActive, unloaded, faulted;
+        private UnityModManager.ModEntry observedDependency, observedStandalone;
+        private Assembly observedDependencyAssembly;
+        private bool dependencyWasReady;
         private double nextProbe;
         public bool DesiredEnabled { get; private set; }
         public bool Active { get; private set; }
@@ -40,23 +43,20 @@ namespace DadsToolbox.CclControls
 
         public void Configure(bool desired, bool runtimeParentActive)
         {
-            bool changed = !configured || DesiredEnabled != desired || parentActive != runtimeParentActive;
             DesiredEnabled = desired; parentActive = runtimeParentActive;
             if (unloaded) { SetStatus("Unloaded; create a new module instance."); return; }
-            configured = true;
-            if (!changed) return;
-            Evaluate();
+            Evaluate(true);
         }
         public void Tick()
         {
             if (unloaded || clock.Elapsed.TotalSeconds < nextProbe) return;
             nextProbe = clock.Elapsed.TotalSeconds + 1;
-            Evaluate();
+            Evaluate(false);
         }
         public void Refresh()
         {
             if (unloaded) return;
-            faulted = false; nextProbe = 0; Evaluate();
+            faulted = false; nextProbe = 0; Evaluate(true);
         }
         public bool Stop()
         {
@@ -73,7 +73,7 @@ namespace DadsToolbox.CclControls
             if (success) { unloaded = true; SetStatus("Unloaded" + RestartNotice()); }
             return success;
         }
-        private void Evaluate()
+        private void Evaluate(bool validateOwnership)
         {
             try
             {
@@ -83,7 +83,20 @@ namespace DadsToolbox.CclControls
                     return;
                 }
                 var standalone = UnityModManager.FindMod(StandaloneModId);
-                if ((standalone != null && (standalone.Loaded || standalone.Active)) || HasOwner(StandaloneModId))
+                if (standalone != null && (standalone.Loaded || standalone.Active))
+                    standaloneApplied = true;
+                var dependency = UnityModManager.FindMod(DependencyId);
+                bool dependencyReady = dependency != null && dependency.Loaded && dependency.Active;
+                var dependencyAssembly = dependencyReady ? dependency.Assembly : null;
+                validateOwnership |= !ReferenceEquals(dependency, observedDependency) ||
+                    dependencyAssembly != observedDependencyAssembly || dependencyReady != dependencyWasReady ||
+                    !ReferenceEquals(standalone, observedStandalone);
+                observedDependency = dependency; observedDependencyAssembly = dependencyAssembly;
+                dependencyWasReady = dependencyReady; observedStandalone = standalone;
+                // UMM dependency events, explicit configure/retry and observed
+                // dependency transitions reconcile metadata. Stable polling
+                // must not walk every Harmony patch in the game.
+                if (validateOwnership && !standaloneApplied && HasOwner(StandaloneModId))
                     standaloneApplied = true;
                 if (standaloneApplied)
                 {
@@ -91,8 +104,7 @@ namespace DadsToolbox.CclControls
                     if (RemoveOwned()) SetStatus("Blocked: standalone DVCCLControlFix was loaded or patched. Disable/remove it and restart.");
                     return;
                 }
-                var dependency = UnityModManager.FindMod(DependencyId);
-                if (dependency == null || !dependency.Loaded || !dependency.Active)
+                if (!dependencyReady)
                 {
                     if (RemoveOwned()) SetStatus("Inactive: requires loaded and active CCL." + RestartNotice());
                     return;
@@ -102,6 +114,9 @@ namespace DadsToolbox.CclControls
                 if (owner != null && owner != this)
                 { SetStatus("Blocked: another Controls module owns this lifetime."); return; }
                 if (Active) return;
+                // A rejected activation needs a meaningful transition or an
+                // explicit retry, not another global negative scan each second.
+                if (!validateOwnership) return;
                 if (HasOwner(HarmonyOwner))
                 { SetStatus("Blocked: the Controls Harmony owner is already in use."); return; }
                 owner = this;

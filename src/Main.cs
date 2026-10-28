@@ -219,7 +219,7 @@ namespace DadsToolbox
         {
             if (!loaded || finalShutdownStarted) return;
             Run("HUD Guard", () => { hud.Configure(settings.HudGuard, enabled); hud.Tick(); });
-            Run("CCL Control Fix", () => { controls.Configure(settings.CclControlFix, enabled); controls.Tick(); });
+            Run("CCL Control Fix", () => controls.Tick());
             if (enabled)
             {
                 Run("DoubleTrack signs", () => signs.Tick(Time.realtimeSinceStartup));

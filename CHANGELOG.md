@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.5-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.5-dev) — 28 October 2026
+
+- Removed repeated compatibility scans from Sound Pitch and CCL Control Fix during normal gameplay, addressing recurring Update hitches.
+- Kept conflict checks on activation, dependency changes and explicit retry.
+
 ## [0.4.4-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.4-dev) — 26 October 2026
 
 - Fixed steam pitch scaling: smaller boilers pitch sounds up and larger boilers pitch them down, relative to the sound donor.
