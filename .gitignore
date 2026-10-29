@@ -5,6 +5,8 @@ evidence/**/*.dll
 evidence/**/*.exe
 evidence/**/*.cache
 evidence/**/*.rsp
+# Detailed test runs stay local; the concise aggregate validation is tracked.
+evidence/*/
 **/Library/
 **/Temp/
 **/obj/

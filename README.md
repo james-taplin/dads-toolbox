@@ -2,7 +2,7 @@
 
 A collection of fixes and tweaks for Derail Valley, together in one Unity Mod Manager mod. Turn each fix on or off independently, with extra settings for sound pitch and sign clearance.
 
-**1.0.0-rc.3** is a release candidate for testing. [Changelog](CHANGELOG.md) · [User guide](docs/README.md)
+**1.0.0-rc.4** is a release candidate for testing. [Changelog](CHANGELOG.md) · [User guide](docs/README.md)
 
 The latest published download is [0.4.5-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.5-dev).
 
@@ -13,6 +13,7 @@ The latest published download is [0.4.5-dev](https://github.com/james-taplin/dad
 | HUD Guard | Prevents certain HUD errors when reading locomotive force, power and wheel slip. |
 | CCL Control Fix | Repairs missing control connections and fixes some shared-control, rear-cab and HUD input issues on CCL locomotives. |
 | Loco Sound Pitch | Adjusts native exterior locomotive sounds to better suit the size of CCL steam and diesel locomotives. |
+| Chuff Fix | Matches steam chuff banks and running loops to each engine's native exhaust timing, including articulated and multi-cylinder locomotives. Supports vanilla and CCL stock. |
 | Skin Manager fixes | Preserves scorch on exploded vehicles and helps skins bundled with CCL vehicles load correctly. Two separate switches. |
 | CCL Smoke Fix | Corrects stack-smoke colour and opacity on affected CCL locomotives. |
 | DoubleTrack sign clearance | Moves generated signs clear of nearby tracks. |
@@ -37,4 +38,4 @@ On Windows, with a .NET SDK and Derail Valley installed:
 .\Build.ps1 -GamePath 'C:\path\to\Derail Valley'
 ~~~
 
-[Technical validation](docs/VALIDATION-1.0.0-rc.3.md) is available for contributors.
+[Technical validation](docs/VALIDATION-1.0.0-rc.4.md) is available for contributors.

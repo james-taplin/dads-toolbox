@@ -15,6 +15,7 @@ using LocoSim.Definitions;
 using UnityEngine;
 using UnityEngine.Audio;
 using UObject = UnityEngine.Object;
+using DadsToolbox.Chuffs;
 
 namespace DadsToolbox.LocoSound
 {
@@ -116,6 +117,7 @@ namespace DadsToolbox.LocoSound
             Config.ChuffLoops = GUILayout.Toggle(Config.ChuffLoops, "High-speed chuff loops");
             GUILayout.EndHorizontal();
             GUILayout.Label("Pitch also changes sample playback speed. Extreme settings stretch chuffs; loops can sound out of sync.");
+            GUILayout.Label("Chuff Fix keeps corrected running loops at native exhaust cadence. Your loop-pitch choice is retained for when Chuff Fix is off.");
             GUILayout.Label("Continuous sounds update live. One-shot sounds use the new settings on their next play.");
             GUILayout.Label("Default exterior auxiliaries and unclassified effects are included. Cab equipment and custom clips are excluded.");
             GUILayout.Label("Incompatible with Zeibach's Sounds (ZSounds). Use only one of these mods.");
@@ -665,8 +667,49 @@ namespace DadsToolbox.LocoSound
 
         internal static float LayerFactor(LayeredAudio.Layer layer, Binding binding)
         {
+            if (ChuffLoopOwnership.OwnsLayer(layer)) return 1;
             if (!CanTouchLayer(layer, binding)) return 1;
             return Factor(binding.Engine, binding.Donors, binding.Kind, binding.Loop, binding.ModuleDonors);
+        }
+
+        internal static void SuspendRhythmicPitch(LayeredAudio.Layer layer)
+        {
+            if (layer == null || !Layers.TryGetValue(layer, out var binding) || binding.Source != layer.source ||
+                binding.AppliedMultiplier == 1 || !binding.Input.HasValue || !CanTouchLayer(layer, binding)) return;
+            // Ownership is already claimed, so replaying the real native input
+            // removes size scaling before Chuff Fix captures its pitch baseline.
+            ReplayLayer(layer, binding);
+            binding.AppliedMultiplier = 1;
+            if (layer.source && layer.useDoppler && layer.doppler)
+                layer.source.pitch = layer.doppler.desiredPitch;
+        }
+
+        internal static void ResumeRhythmicPitch(LayeredAudio.Layer layer, bool refreshPitch)
+        {
+            if (layer == null || !layer.source || !Layers.TryGetValue(layer, out var binding) || binding.Source != layer.source) return;
+            binding.Clip = layer.source.clip;
+            binding.AllowedClips.Clear();
+            if (binding.Clip) binding.AllowedClips.Add(binding.Clip);
+            foreach (var clip in layer.clips ?? new AudioClip[0]) if (clip) binding.AllowedClips.Add(clip);
+            binding.Donors = binding.Clip && Clips.TryGetValue(binding.Clip, out var info) ? info.Donors : 0;
+            binding.Engine.Modules.Remove(binding.Audio);
+            binding.Engine.Callers.Remove(binding.Audio);
+            binding.Engine.ResolvedDonors.Clear();
+            if (binding.Audio)
+            {
+                var metadata = ModuleMetadata(binding.Engine, binding.Audio);
+                binding.ModuleDonors = metadata.Donors;
+                if (metadata.Cabin) binding.Kind = SoundKind.CabEquipment;
+            }
+            // Runtime PCM clips need not be recognized while Chuff Fix owns
+            // cadence. Rebind the restored native clip before resuming tone.
+            // A foreign edit keeps its current pitch until the next genuine
+            // native audio update; cleanup must not immediately overwrite it.
+            if (refreshPitch)
+            {
+                ReplayLayer(layer, binding);
+                if (Enabled && binding.Engine.Audio) QueueCar(binding.Engine.Audio);
+            }
         }
         internal static void LogAppliedPitch(LayeredAudio.Layer layer)
         {

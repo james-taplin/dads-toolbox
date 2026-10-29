@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-rc.4 — 29 October 2026
+
+- Added an independent Chuff Fix for native steam exhaust timing, short chuff banks and recognised running loops.
+- Coordinated rhythmic loops with Sound Pitch and added live reader restoration when toggling the feature.
+- Kept Doppler pitch aligned during running-loop clip rate changes.
+
 ## 1.0.0-rc.3 — 29 October 2026
 
 - Removed development-only standalone detection and sound-settings import.

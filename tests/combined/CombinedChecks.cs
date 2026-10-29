@@ -19,13 +19,13 @@ public static class CombinedChecks
     static int controlConfigureCalls;
     static void CountControlConfigure() { controlConfigureCalls++; }
     static readonly List<string> report = new List<string>();
-    static readonly string[] Flags = { "SkinDamageFix", "SkinRegistrationFix", "DoubleTrackSignClearance", "HudGuard", "CclControlFix", "LocoSoundPitch", "SmokeFix", "BogieVisualSmoothing" };
-    static readonly string[] ModuleFields = { "skinDamage", "skinRegistration", "signs", "hud", "controls", "sound", "smoke", "bogies" };
+    static readonly string[] Flags = { "SkinDamageFix", "SkinRegistrationFix", "DoubleTrackSignClearance", "HudGuard", "CclControlFix", "LocoSoundPitch", "SmokeFix", "BogieVisualSmoothing", "ChuffFix" };
+    static readonly string[] ModuleFields = { "skinDamage", "skinRegistration", "signs", "hud", "controls", "sound", "smoke", "bogies", "chuffs" };
     static readonly string[] Owners = {
         "jimtaplin.derailvalley.toolbox.skindamage", "jimtaplin.derailvalley.toolbox.skinregistration",
         "jimtaplin.derailvalley.toolbox.hudguard",
         "jimtaplin.derailvalley.toolbox.cclcontrols", "jimtaplin.derailvalley.toolbox.locosoundpitch",
-        "jimtaplin.derailvalley.toolbox.smoke" };
+        "jimtaplin.derailvalley.toolbox.smoke", "jimtaplin.derailvalley.toolbox.chufffix" };
     static readonly Dictionary<string, int> CleanupCalls = new Dictionary<string, int>();
     const BindingFlags BF = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
     public static int Main(string[] args)
@@ -54,7 +54,7 @@ public static class CombinedChecks
         var parent = Entry("DadsToolbox", Path.Combine(output, "Mods", "DadsToolbox"));
         var asm = typeof(DadsToolbox.Main).Assembly;
         Check(asm.GetName().Name == "DadsToolbox", "one parent assembly identity");
-        string[] forbidden = { "SkinManagerMod", "CCL.Importer", "CCL.Types", "DoubleTrack", "HeadsUpDisplay", "SteamSizePitch", "DVCCLControlFix", "CCLSmokeFix", "HUDGuard", "H6FTrainsetFix", "DVLocoBogieVisuals" };
+        string[] forbidden = { "SkinManagerMod", "CCL.Importer", "CCL.Types", "DoubleTrack", "HeadsUpDisplay", "SteamSizePitch", "DVCCLControlFix", "CCLSmokeFix", "HUDGuard", "H6FTrainsetFix", "DVLocoBogieVisuals", "MultiCylinderChuffFix" };
         Check(!asm.GetReferencedAssemblies().Any(a => forbidden.Contains(a.Name)), "optional mod assemblies are not hard assembly references");
         Check(Owners.Distinct().Count() == Owners.Length, "all patching features reserve distinct owner IDs");
         Check(asm.GetType("DadsToolbox.H6F.H6FModule") == null, "retired H6F module is absent from shipped DLL");
@@ -127,7 +127,7 @@ public static class CombinedChecks
                 Set(current, flag, false);
                 parent.OnSaveGUI(parent);
                 var reloaded = UnityModManager.ModSettings.Load<ToolboxSettings>(parent);
-                Check(!GetFlag(reloaded, flag) && Flags.Where(f => f != flag).All(f => GetFlag(reloaded, f)), "turning off " + flag + " preserves the other six options");
+                Check(!GetFlag(reloaded, flag) && Flags.Where(f => f != flag).All(f => GetFlag(reloaded, f)), "turning off " + flag + " preserves the other options");
                 Set(current, flag, true);
             }
             foreach (string flag in Flags) Set(current, flag, false);
@@ -156,8 +156,8 @@ public static class CombinedChecks
     static ToolboxSettings SettingsFor(int mask) { var s = new ToolboxSettings(); for (int i = 0; i < Flags.Length; i++) Set(s, Flags[i], (mask & (1 << i)) != 0); return s; }
     // Bogie smoothing also supports vanilla stock and requires Unity native
     // objects, so its active lifecycle belongs to the separate native suite.
-    static ToolboxSettings ColdSettings() { var s = SettingsFor((1 << Flags.Length) - 1); s.BogieVisualSmoothing = false; return s; }
-    static bool ColdChoicesPreserved() { return Flags.Where(f => f != "BogieVisualSmoothing").All(f => GetFlag(ParentField("settings"), f)) && !GetFlag(ParentField("settings"), "BogieVisualSmoothing"); }
+    static ToolboxSettings ColdSettings() { var s = SettingsFor((1 << Flags.Length) - 1); s.BogieVisualSmoothing = false; s.ChuffFix = false; return s; }
+    static bool ColdChoicesPreserved() { return Flags.Where(f => f != "BogieVisualSmoothing" && f != "ChuffFix").All(f => GetFlag(ParentField("settings"), f)) && !GetFlag(ParentField("settings"), "BogieVisualSmoothing") && !GetFlag(ParentField("settings"), "ChuffFix"); }
     static void FinalUnloadFailureChecks(UnityModManager.ModEntry parent)
     {
         SettingsFor(0).Save(parent); DadsToolbox.Main.Load(parent);
@@ -184,7 +184,7 @@ public static class CombinedChecks
         Check(DadsToolbox.Main.Load(parent) && !(bool)ParentField("finalShutdownStarted"), "successful new Load clears final shutdown latch");
         try
         {
-            Check(ModuleFields.All(f => !ReferenceEquals(prior[f], ParentField(f))) && ParentSubscriptions() == 1, "recovered parent creates seven fresh lifetimes with one listener");
+            Check(ModuleFields.All(f => !ReferenceEquals(prior[f], ParentField(f))) && ParentSubscriptions() == 1, "recovered parent creates fresh lifetimes with one listener");
             Check(parent.OnToggle(parent, true) && ToolboxPatchCount() == 0, "recovered lifetime can reactivate with saved off preferences");
         }
         finally { parent.OnUnload(parent); }
@@ -195,7 +195,7 @@ public static class CombinedChecks
         Check(DadsToolbox.Main.Load(parent), "default-selected parent starts with every optional dependency absent");
         try
         {
-            Check(ToolboxPatchCount() == 0 && ColdChoicesPreserved(), "missing optional dependencies preserve selected choices and install no patches; native bogie runtime tested separately");
+            Check(ToolboxPatchCount() == 0 && ColdChoicesPreserved(), "missing optional dependencies preserve selected choices and install no patches; native bogie and Chuff runtimes tested separately");
             Check(GetProperty(ParentField("hud"), "State").ToString() == "WaitingForHud", "HUD Guard waits for absent HUD");
             Check(!(bool)GetProperty(ParentField("controls"), "Active") && ((string)GetProperty(ParentField("controls"), "Status")).Contains("CCL"), "CCL controls wait for optional CCL");
             Check(!(bool)GetProperty(ParentField("sound"), "Active") && ((string)GetProperty(ParentField("sound"), "Status")).Contains("CCL"), "Loco Sound Pitch waits for optional CCL without touching native audio");
@@ -236,8 +236,8 @@ public static class CombinedChecks
             fixture.Patch(typeof(DadsToolbox.Main).GetMethod("Cleanup", BF), prefix: new HarmonyMethod(typeof(CombinedChecks).GetMethod("ObserveCleanup", BF)));
             bool result = parent.OnToggle(parent, false);
             Check(!result, "parent propagates a failed first-module cleanup result");
-            var cleanupNames = new[] { "HUD Guard", "CCL Control Fix", "Loco Sound Pitch", "CCL Smoke Fix", "Skin damage", "Skin registration", "DoubleTrack signs" };
-            Check(cleanupNames.All(f => CleanupCalls.ContainsKey(f) && CleanupCalls[f] == 1), "failed HUD cleanup still attempts all other six module cleanups exactly once");
+            var cleanupNames = new[] { "HUD Guard", "CCL Control Fix", "Loco Sound Pitch", "CCL Smoke Fix", "Skin damage", "Skin registration", "DoubleTrack signs", "Bogie Visual Smoothing", "Chuff Fix" };
+            Check(cleanupNames.All(f => CleanupCalls.ContainsKey(f) && CleanupCalls[f] == 1), "failed HUD cleanup still attempts every other module cleanup exactly once");
             Check(!(bool)ParentField("enabled") && ToolboxPatchCount() == 0, "failed disable remains internally suspended instead of silently resuming work");
             Check(Flags.All(f => !GetFlag(ParentField("settings"), f)), "cleanup failure preserves every saved preference");
             Check(ForeignMarker() == 17 && Harmony.GetPatchInfo(marker).Owners.Contains("fixture.dadstoolbox.combined.foreign"), "failed Toolbox cleanup preserves an unrelated Harmony owner");

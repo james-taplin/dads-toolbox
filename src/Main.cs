@@ -19,6 +19,7 @@ namespace DadsToolbox
         public bool SkinRegistrationFix = true;
         public bool DoubleTrackSignClearance = true;
         public bool BogieVisualSmoothing = true;
+        public bool ChuffFix = true;
         public SignClearanceOptions SignClearance = new SignClearanceOptions();
         public SoundOptions Sound = new SoundOptions();
         public void Normalize()
@@ -43,6 +44,7 @@ namespace DadsToolbox
         private static ControlsModule controls;
         private static SoundPitchModule sound;
         private static BogieVisualModule bogies;
+        private static ChuffFixModule chuffs;
         private static bool enabled, loaded, finalShutdownStarted;
         private static string status, registrationStatus, smokeStatus;
         private static readonly Dictionary<string, string> faults = new Dictionary<string, string>();
@@ -64,6 +66,7 @@ namespace DadsToolbox
             sound = new SoundPitchModule(settings.Sound, text => Log("Loco Sound Pitch", text),
                 entry.Path, SoundConflict);
             bogies = new BogieVisualModule(entry.Logger, entry.Path);
+            chuffs = new ChuffFixModule(entry.Logger);
             entry.OnGUI = OnGUI; entry.OnSaveGUI = OnSaveGUI; entry.OnToggle = OnToggle;
             entry.OnUnload = OnUnload; entry.OnUpdate = OnUpdate;
             UnityModManager.toggleModsListen -= OnDependencyToggle;
@@ -84,6 +87,7 @@ namespace DadsToolbox
             Run("Skin registration", ApplyRegistrationSettings);
             Run("DoubleTrack signs", () => signs.Configure(settings.DoubleTrackSignClearance, enabled));
             Run("Bogie Visual Smoothing", () => bogies.Configure(settings.BogieVisualSmoothing, enabled));
+            Run("Chuff Fix", () => chuffs.Configure(settings.ChuffFix, enabled));
         }
 
         private static void ApplySmokeSettings()
@@ -184,6 +188,7 @@ namespace DadsToolbox
             bool ok = true;
             ok &= Cleanup("HUD Guard", () => final ? hud.Unload() : hud.Stop());
             ok &= Cleanup("CCL Control Fix", () => final ? controls.Unload() : controls.Stop());
+            ok &= Cleanup("Chuff Fix", () => final ? chuffs.Unload() : chuffs.Stop());
             ok &= Cleanup("Loco Sound Pitch", () => final ? sound.Unload() : sound.Stop());
             ok &= Cleanup("Bogie Visual Smoothing", () => final ? bogies.Unload() : bogies.Stop());
             ok &= Cleanup("CCL Smoke Fix", () => smoke.Stop());
@@ -212,6 +217,7 @@ namespace DadsToolbox
             if (!loaded || finalShutdownStarted) return;
             Run("HUD Guard", () => { hud.Configure(settings.HudGuard, enabled); hud.Tick(); });
             Run("CCL Control Fix", () => controls.Tick());
+            Run("Chuff Fix", () => chuffs.Tick());
             if (enabled)
             {
                 Run("DoubleTrack signs", () => signs.Tick(Time.realtimeSinceStartup));
@@ -221,12 +227,13 @@ namespace DadsToolbox
 
         private static void OnGUI(UnityModManager.ModEntry mod)
         {
-            GUILayout.Label("Dad's Toolbox — 1.0.0-rc.3");
+            GUILayout.Label("Dad's Toolbox — 1.0.0-rc.4");
             Option(ref settings.HudGuard, "HUD Guard", hud.Status);
             Option(ref settings.CclControlFix, "CCL Control Fix", controls.Status);
             GUILayout.Label("Existing control/prefab changes require restart for complete restoration.");
             Option(ref settings.LocoSoundPitch, "Loco Sound Pitch", sound.Status);
             Run("Loco Sound Pitch", () => { if (sound.DrawOptions()) ApplySettings(); });
+            Option(ref settings.ChuffFix, "Chuff Fix", chuffs.Status);
             Option(ref settings.SmokeFix, "CCL Smoke Fix", smokeStatus ?? smoke.Status);
             GUILayout.Label(SmokeFixModule.ReloadNotice);
             Option(ref settings.SkinDamageFix, "Skin Manager: preserve scorched appearance", status, "Skin damage");
@@ -252,6 +259,7 @@ namespace DadsToolbox
                 Run("Loco Sound Pitch", () => sound.Refresh());
                 Run("DoubleTrack signs", () => signs.Refresh());
                 Run("Bogie Visual Smoothing", () => bogies.Refresh());
+                Run("Chuff Fix", () => chuffs.Refresh());
                 ApplySettings();
             }
         }
@@ -285,6 +293,7 @@ namespace DadsToolbox
                         case "CCL Control Fix": return controls.Stop();
                         case "Loco Sound Pitch": return sound.Stop();
                         case "Bogie Visual Smoothing": return bogies.Stop();
+                        case "Chuff Fix": return chuffs.Stop();
                         case "CCL Smoke Fix": return smoke.Stop();
                         case "Skin damage": skinDamage.Uninstall(); return !skinDamage.Active;
                         case "Skin registration": skinRegistration.Uninstall(); return !skinRegistration.Active;

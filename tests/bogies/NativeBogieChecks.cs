@@ -401,7 +401,7 @@ public static class NativeBogieChecks
     static void ParentChecks()
     {
         var path = Path.Combine(output, "parent-entry"); Directory.CreateDirectory(path);
-        File.WriteAllText(Path.Combine(path, "Settings.xml"), "<ToolboxSettings><HudGuard>false</HudGuard><CclControlFix>false</CclControlFix><LocoSoundPitch>false</LocoSoundPitch><SmokeFix>false</SmokeFix><SkinDamageFix>false</SkinDamageFix><SkinRegistrationFix>false</SkinRegistrationFix><DoubleTrackSignClearance>false</DoubleTrackSignClearance><BogieVisualSmoothing>true</BogieVisualSmoothing><SoundSettingsMigrationComplete>true</SoundSettingsMigrationComplete></ToolboxSettings>");
+        File.WriteAllText(Path.Combine(path, "Settings.xml"), "<ToolboxSettings><HudGuard>false</HudGuard><CclControlFix>false</CclControlFix><LocoSoundPitch>false</LocoSoundPitch><SmokeFix>false</SmokeFix><SkinDamageFix>false</SkinDamageFix><SkinRegistrationFix>false</SkinRegistrationFix><DoubleTrackSignClearance>false</DoubleTrackSignClearance><BogieVisualSmoothing>true</BogieVisualSmoothing><ChuffFix>false</ChuffFix><SoundSettingsMigrationComplete>true</SoundSettingsMigrationComplete></ToolboxSettings>");
         var entry = Entry("DadsToolbox", true, true); Set(entry, "Path", path + Path.DirectorySeparatorChar); var main = toolbox.GetType("DadsToolbox.Main", true);
         try
         {

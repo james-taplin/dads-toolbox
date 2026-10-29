@@ -1,6 +1,6 @@
 param(
     [string]$Path,
-    [ValidatePattern('^(dev|rc\.[1-9][0-9]*)?$')][string]$ReleaseSuffix = 'rc.3'
+    [ValidatePattern('^(dev|rc\.[1-9][0-9]*)?$')][string]$ReleaseSuffix = 'rc.4'
 )
 $ErrorActionPreference = 'Stop'
 if (-not $Path) {
@@ -36,8 +36,8 @@ foreach ($taskCheck in $taskValidation.checks) {
     $taskSummedPassed += [int]$taskCheck.passed
     $taskSummedFailed += [int]$taskCheck.failed
 }
-if ($taskValidation.passed -ne $taskSummedPassed -or $taskValidation.failed -ne $taskSummedFailed -or $taskValidation.checks.Count -ne 10) {
-    throw 'Packaged validation must contain all ten suites and correct aggregate totals.'
+if ($taskValidation.passed -ne $taskSummedPassed -or $taskValidation.failed -ne $taskSummedFailed -or $taskValidation.checks.Count -ne 11) {
+    throw 'Packaged validation must contain all eleven suites and correct aggregate totals.'
 }
 if (($taskChecked | Where-Object entry -CEQ 'DadsToolbox/DadsToolbox.dll').sha256 -ne $taskActualBinary) { throw 'Packaged DLL differs from build.' }
 $taskInfo = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'Info.json') | ConvertFrom-Json
@@ -45,10 +45,10 @@ if ($taskInfo.EntryMethod -ne 'DadsToolbox.Main.Load' -or $taskInfo.Id -ne 'Dads
 foreach ($taskOptional in @('SkinManagerMod','DoubleTrack','DVCustomCarLoader','HeadsUpDisplay_994','ZSounds')) {
     if ($taskInfo.Requirements -contains $taskOptional) { throw "Optional dependency became a required dependency: $taskOptional" }
 }
-$taskModules = @('SkinDamageFix','SkinRegistrationFix','DoubleTrackSigns','HudGuard','CclControlFix','LocoSoundPitch','SmokeFix','BogieVisualSmoothing')
+$taskModules = @('SkinDamageFix','SkinRegistrationFix','DoubleTrackSigns','HudGuard','CclControlFix','LocoSoundPitch','SmokeFix','BogieVisualSmoothing','ChuffFix')
 if ($taskValidation.version -ne $taskInfo.Version -or $taskValidation.modules.Count -ne $taskModules.Count -or
-    @($taskModules | Where-Object { $_ -cnotin $taskValidation.modules }).Count -ne 0) { throw 'Validation does not describe all eight current internal modules.' }
-foreach ($taskSuite in @('combined','hud','smoke','controls','sound','bogies')) {
+    @($taskModules | Where-Object { $_ -cnotin $taskValidation.modules }).Count -ne 0) { throw 'Validation does not describe all nine current internal modules.' }
+foreach ($taskSuite in @('combined','hud','smoke','controls','sound','bogies','chuff')) {
     $taskChecks = @($taskValidation.checks | Where-Object id -CEQ $taskSuite)
     $taskReceiptPath = Join-Path $PSScriptRoot ('evidence\' + $taskSuite + '\receipt.json')
     if ($taskChecks.Count -ne 1 -or $taskChecks[0].failed -ne 0 -or $taskChecks[0].passed -le 0 -or

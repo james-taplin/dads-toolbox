@@ -3,8 +3,8 @@
   "package": "DadsToolbox",
   "version": "1.0.0",
   "status": "release candidate; isolated integration verified; final live acceptance pending",
-  "binarySha256": "DF17A345159AC897720ED929D98B5A370D1FAC1D1E61EBF1833339F95C5D8EE8",
-  "passed": 17133,
+  "binarySha256": "0DCF2A1BB5E951B864AADA6C13C2CA784B3EB7C897906622E35C689EA48CB565",
+  "passed": 17596,
   "failed": 0,
   "modules": [
     "SkinDamageFix",
@@ -14,7 +14,8 @@
     "CclControlFix",
     "LocoSoundPitch",
     "SmokeFix",
-    "BogieVisualSmoothing"
+    "BogieVisualSmoothing",
+    "ChuffFix"
   ],
   "features": [
     "HUD Guard",
@@ -23,7 +24,8 @@
     "Skin Manager Fix",
     "CCL Smoke Fix",
     "DoubleTrack sign clearance",
-    "Bogie Visual Smoothing"
+    "Bogie Visual Smoothing",
+    "Chuff Fix"
   ],
   "supportedOptionalDependencies": [
     {
@@ -81,11 +83,11 @@
     },
     {
       "id": "combined",
-      "passed": 348,
+      "passed": 608,
       "failed": 0,
-      "scope": "Exact combined DLL parent, eight independent preferences/all 256 native UMM XML combinations, older Toolbox settings and nested sound values, sole callback/event ownership, off/disabled and optional dependency-waiting lifecycles, recreation, all eight cleanup attempts and foreign-owner preservation. Active vanilla-capable bogie runtime is validated separately in Unity; no native Unity/game/audio execution in this suite.",
+      "scope": "Exact combined DLL parent, nine independent preferences/all 512 native UMM XML combinations, older Toolbox settings and nested sound values, sole callback/event ownership, off/disabled and optional dependency-waiting lifecycles, recreation, all nine cleanup attempts and foreign-owner preservation. Active vanilla-capable bogie and Chuff runtimes are validated separately in Unity; no native Unity/game/audio execution in this suite.",
       "evidence": "evidence/combined/checks.txt",
-      "receiptSha256": "3E0E68169554BB52DC5CEF34D10E318F9C0B8A1EF416833A2DB524412A3054E6"
+      "receiptSha256": "84F25A1C2303000475C8C563AAD4D722D85D51C0FB6129A25225F3436826D41A"
     },
     {
       "id": "hud",
@@ -93,7 +95,7 @@
       "failed": 0,
       "scope": "hud canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
       "evidence": "evidence/hud/checks.txt",
-      "receiptSha256": "E692C85FB90EBD9653F27A281888D003C159C96B5A6763206B7886E99B0F7B08"
+      "receiptSha256": "75E8C841066E9A12037315595F0FA8231D75DFF0E34204D0FD9B91138CF6A62A"
     },
     {
       "id": "smoke",
@@ -101,7 +103,7 @@
       "failed": 0,
       "scope": "smoke canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
       "evidence": "evidence/smoke/checks.txt",
-      "receiptSha256": "23784ADD49C84FD0700754BDCE8A468B3F1896B0118415426057F23D14314469"
+      "receiptSha256": "A6A692B221892A1D35E490AA369B8DFACB630F756B941B8BE74B3A17D3139072"
     },
     {
       "id": "controls",
@@ -109,7 +111,7 @@
       "failed": 0,
       "scope": "Actual adapted source regressions using explicit managed Unity/control/input stand-ins and audited native input method excerpts; original23 pure math/key-plan checks; exact DLL lifecycle with actual installed UMM/Harmony/native method targets and inactive synthetic Unity component/shared-port/authored-input/scheduler reference remapping. ActionReference fields are omitted identically by native authored input, original standalone candidate and merged component in this fixture, so their cloning remains unavailable/unverified. Live native controls, Rewired focus, physics, real reach, real locomotive prefabs, save/load and gameplay not executed.",
       "evidence": "evidence/controls/result.json",
-      "receiptSha256": "8B31A83BB16CF52F28E4236E50007E5D4FF1137C17566557F19052D885391509"
+      "receiptSha256": "716282C994D3BC06F304BE322DC3763B67E9F2AF16B3D439119F9312529A7CF9"
     },
     {
       "id": "sound",
@@ -117,7 +119,7 @@
       "failed": 0,
       "scope": "Source-linked bidirectional steam boiler-area/non-steam mass rules plus exact-DLL native AudioSource/one-shot/Doppler desired-and-applied pitch writes, curve/caps/strength/restoration, ownership and lifecycle fixtures. Seeded catalogue and inactive car; isolated active audio-only node verifies many-layer discovery, metadata refresh, shared hierarchy inventory and diagnostic cleanup. No game boot, real pack discovery, audible playback or live performance acceptance.",
       "evidence": "evidence/sound/native-fixture-checks.txt",
-      "receiptSha256": "D5E4C3B2388F5DE9CD73214074B3B4375F1F4204AB050F18E30C3A1E7DD8556F"
+      "receiptSha256": "4DAB46A6CDAADA56247209D16D2A77957FB7B8AFCA1C50EB4DBA48F1B60542D5"
     },
     {
       "id": "bogies",
@@ -125,13 +127,21 @@
       "failed": 0,
       "scope": "Exact combined DLL in isolated Unity Play Mode with real meshes, Renderers, rigidbodies, game Bogie/TrainCar and UMM. Standalone comparison covers filter constants/output and three controlled single/constrained/long-articulated visual patterns, warmed Present timings, proxy work units, source replacement and restoration. Actual enable/disable/destroy callbacks, synthetic layouts and explicit world/iterator inputs; only fixture-owned game startup callbacks suppressed. No live game/world packs, real player camera scheduling, native constraint solver scheduling, GPU draw, track physics, gameplay smoothing or performance acceptance.",
       "evidence": "evidence/bogies/native-fixture-checks.txt",
-      "receiptSha256": "49098D0146181500C1A72A599677B36013AFF75C6C3110E9A900565A8AC725E1"
+      "receiptSha256": "D539145813048B6EAD9CCDA4B786296181A7DFF2F85333CCC4D4CDF3698418A7"
+    },
+    {
+      "id": "chuff",
+      "passed": 203,
+      "failed": 0,
+      "scope": "112 current source-linked Reader/Loop adapter cases with real installed Harmony and verbatim native reader methods, plus exact combined DLL in isolated Unity Play Mode with real reader Init/Deinit/UpdateLoops, seeded native engine/flow/Port identities, muted AudioSource and real AudioClip PCM APIs. Both routing/activation orders, ownership, effective-frequency restoration and lifecycle. The preserved0.2.0 negative control must fail3routing cases and is excluded from candidate failure count. Stub/native boundaries explicit in subverdicts; no game packs, engine physics, native one-shot pool, audible listening or live performance acceptance.",
+      "evidence": "evidence/chuff/native-fixture-checks.txt",
+      "receiptSha256": "664219FF0ED59598396C5EF16E56A5C69E0EF0822FCC3CEA485C637D57FF142F"
     }
   ],
   "sourceHashes": [
     {
       "path": "src/AssemblyInfo.cs",
-      "sha256": "7BB1649B6A61F81965FFEF687FFA0764F27F79408015245C30303488A96190A4"
+      "sha256": "D1DBF20630F4D154F55E996A23BE725FBA8578333F03EF0B9832BC653346CCA0"
     },
     {
       "path": "src/BogieVisualLayout.cs",
@@ -148,6 +158,18 @@
     {
       "path": "src/BogieVisualSmoother.cs",
       "sha256": "AC61A5EB89D458D93091FAE5929922172CD2215F7A88B439A96E2BBAD735C931"
+    },
+    {
+      "path": "src/ChuffFixModule.cs",
+      "sha256": "460A86115FBABB6BD7C476089905F259F01D72A36266E5DB6EFD34638D0E54F7"
+    },
+    {
+      "path": "src/ChuffLoopAdaptation.cs",
+      "sha256": "6712C46A01D531A4D859B79380C97A23271A041E22B7204E8B4742D4F710D7BA"
+    },
+    {
+      "path": "src/ChuffReaderAdaptation.cs",
+      "sha256": "5DEBA79ABCDFFE6E488912A3CF104E09A684AE888A6062E716781BCAF01471DF"
     },
     {
       "path": "src/ControlsBridge.cs",
@@ -179,7 +201,7 @@
     },
     {
       "path": "src/Main.cs",
-      "sha256": "3FCEF3111B86C993B42ED621AC29166820F23D8B390111A7F44968CD49A07446"
+      "sha256": "D4E2CF89D4937ECE9DAB274B69CA1E2488609AC6FE7F52BCE38D914DAFF81F2C"
     },
     {
       "path": "src/SkinDamageFix.cs",
@@ -203,7 +225,7 @@
     },
     {
       "path": "src/SoundEngine.cs",
-      "sha256": "3E17A1E98447F1CA2BF617669C281AC500213CC72CCA5D420E9FA1C0E6B90FF3"
+      "sha256": "E4DDB1029AC85D5286C949941D2EB7E1B9CE5BBC2C476D53E29E7C8D79B2B2E9"
     },
     {
       "path": "src/SoundPitchModule.cs",
@@ -228,7 +250,8 @@
     "Sign height and facing",
     "Unlisted objects",
     "Desired options across dependencies/conflicts",
-    "Independent module lifecycle"
+    "Independent module lifecycle",
+    "Native per-engine chuff timing and saved Sound group preferences"
   ],
   "remaining": [
     "Full clean UMM/game boot with real embedded CCL pack and no companion",
@@ -243,12 +266,19 @@
     "Real vehicle interior/exterior streaming",
     "SaveManager save/reload",
     "5AT-specific actual appearance",
-    "Live repair UI and GUI"
+    "Live repair UI and GUI",
+    "Chuff listening/real-pack acceptance including stock, compound, articulated and geared steam locomotives; crawl/loops/high speed/stop/reverse/slip/reload"
   ],
   "bogieReference": {
     "version": "0.4.2",
     "sha256": "282F452670B3AFA2E238C08ED0E5B220CD2B7457280E2D2E876CD20A5DFED86B",
     "coverage": "Controlled native Play Mode component comparison; real vehicle packs and live performance acceptance remain separate."
+  },
+  "chuffReference": {
+    "version": "0.2.1",
+    "sha256": "6F9E29BA4FF3427B6E2B334FE6C97942E6382C63EA7D0DE30C8F9B8A2C63582A",
+    "negativeControl": "0.2.0 reproduces 109 passes / 3 expected routing failures, excluded from candidate totals",
+    "coverage": "Source-linked adapter plus exact-DLL native Play Mode/PCM; no audible or real-pack acceptance."
   },
   "installed": false,
   "gameLaunched": false,

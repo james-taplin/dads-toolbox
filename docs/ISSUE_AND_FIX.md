@@ -14,6 +14,12 @@ Check that CCL is active and ZSounds is not loaded. Existing Toolbox sound value
 
 Enable embedded-skin registration and check that Skin Manager 4.4.1 and CCL 3.1.9 or newer are active. The correction helps skins load after their vehicles are registered; it cannot repair an invalid vehicle ID, missing texture or broken skin definition.
 
+## Chuff Fix is blocked or requests a restart
+
+Remove standalone MultiCylinderChuffFix and restart the game. Clearing its checkbox during a session may leave its patches loaded. If Toolbox reports an incomplete reader restoration, restart before making another comparison and include that message in your report.
+
+With Chuff Fix active, Sound Pitch deliberately leaves recognised rhythmic running loops at native exhaust cadence. Other eligible sounds still use your pitch settings.
+
 ## Changes remain after turning a fix off
 
 Some corrections modify vehicles or signs already loaded into the world. Restart for a clean comparison. The [toggle guide](README.md#toggles-and-restarts) explains what each switch can undo.

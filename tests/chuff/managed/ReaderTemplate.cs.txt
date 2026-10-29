@@ -1,0 +1,66 @@
+using System;
+using System.Runtime.CompilerServices;
+using LocoSim.Implementations;
+using UnityEngine;
+using UnityEngine.Audio;
+
+namespace DV.ModularAudioCar
+{
+    // Fixture shell only. Native declarations below are inserted verbatim at test runtime.
+    public class ChuffClipsSimReader : AAudioClipSimReader
+    {
+        public class OrderedChuffClips { public AudioClip[] chuffVariations; }
+        public class IndividualChuffAudioSourceConfig
+        {
+            public Transform parent = new Transform();
+            public AnimationCurve chuffFrequencyToMasterVolume = new AnimationCurve(x => 1f);
+            public float pitch = 1f, spread = 7f, minDistance = 1f, maxDistance = 500f;
+            public AudioMixerGroup mixerGroup = new AudioMixerGroup();
+            public AudioSourceCurves customCurves = new AudioSourceCurves();
+            public AnimationCurve spatialCurve = new AnimationCurve(x => 1f);
+        }
+        public string chuffEventPortId, exhaustPressurePortId, chuffFrequencyPortId;
+        public string cylinderWaterNormalizedPortId, cylinderCockControlPortId, ashesInPipesPortId;
+        public OrderedChuffClips[] lowPressureClips, mediumPressureClips, highPressureClips;
+        public IndividualChuffAudioSourceConfig regularChuffConfig = new IndividualChuffAudioSourceConfig();
+        public IndividualChuffAudioSourceConfig waterChuffConfig = new IndividualChuffAudioSourceConfig();
+        public IndividualChuffAudioSourceConfig ashChuffConfig = new IndividualChuffAudioSourceConfig();
+        public AnimationCurve pressureToVolumeCurve = new AnimationCurve(x => .75f);
+        public float mediumPressureThreshold = 10f, highPressureThreshold = 20f;
+        public AudioClip[] waterChuffClips = new AudioClip[0], ashChuffClips = new AudioClip[0];
+        public ChuffLoop[] chuffLoops = new ChuffLoop[0], waterChuffLoops = new ChuffLoop[0], ashChuffLoops = new ChuffLoop[0];
+        private Port exhaustPressurePort = new Port(5f);
+        private Port chuffFrequencyPort = new Port(2f);
+        private Port cylinderWaterNormalizedPort = new Port(0f);
+        private Port cylinderCockControlPort = new Port(0f);
+        private Port ashesInPipesPort = new Port(0f);
+        private bool anyLoopOngoing;
+        private Port chuffEventPort;
+        private TrainCar car;
+        private Coroutine wheelSlideCoro, wheelslipCoro;
+        private void OnWheelSlideChange(bool value) { }
+        private void OnWheelslipChange(bool value) { }
+        private void OnMovementStateChange(bool value) { }
+        public Port Pressure { get { return exhaustPressurePort; } set { exhaustPressurePort = value; } }
+        public Port Frequency { get { return chuffFrequencyPort; } }
+        public Port Water { get { return cylinderWaterNormalizedPort; } }
+        public Port Cocks { get { return cylinderCockControlPort; } }
+        public Port Ash { get { return ashesInPipesPort; } }
+        public bool AnyLoop { get { return anyLoopOngoing; } }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void Fire(float value) { OnChuff(value); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void RunLoops() { UpdateLoops(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        /*NATIVE_INIT*/
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        /*NATIVE_DEINIT*/
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        /*NATIVE_ONCHUFF*/
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        /*NATIVE_UPDATELOOPS*/
+        /*NATIVE_WATERINPUT*/
+        /*NATIVE_ASHINPUT*/
+        /*NATIVE_LOOPCLASS*/
+    }
+}

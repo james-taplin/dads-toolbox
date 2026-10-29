@@ -33,7 +33,7 @@ $taskReceipt = [ordered]@{
     compiler = $taskCompiler; compilerSha256 = (Get-FileHash -LiteralPath $taskCompiler).Hash
     sources = @($taskSources | ForEach-Object { Get-FileHash -LiteralPath $_ | Select-Object Path, Hash })
     references = @($taskReferences | ForEach-Object { Get-FileHash -LiteralPath (Join-Path $taskManagedRoot $_) | Select-Object Path, Hash })
-    scope = 'Dad''s Toolbox release candidate: HUD Guard, CCL Control Fix, Loco Sound Pitch, two Skin Manager fixes, CCL Smoke Fix, DoubleTrack sign clearance and Bogie Visual Smoothing. No game launch or installation.'
+    scope = 'Dad''s Toolbox release candidate: HUD Guard, CCL Control Fix, Loco Sound Pitch, two Skin Manager fixes, CCL Smoke Fix, DoubleTrack sign clearance, Bogie Visual Smoothing and Chuff Fix. No game launch or installation.'
 }
 $taskReceipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $taskBuildRoot 'build-receipt.json') -Encoding utf8
 Write-Output "Built $taskOutput"
