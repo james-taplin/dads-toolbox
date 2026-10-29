@@ -320,7 +320,7 @@ public static class ManagedChecks
     // actual Unity audio APIs and must not run in a CLR-only fixture.
     private static void DisableNewModules(ToolboxSettings value)
     {
-        foreach (string name in new[] { "HudGuard", "CclControlFix", "LocoSoundPitch", "SmokeFix" })
+        foreach (string name in new[] { "HudGuard", "CclControlFix", "LocoSoundPitch", "SmokeFix", "BogieVisualSmoothing" })
         {
             var field = typeof(ToolboxSettings).GetField(name);
             if (field != null) field.SetValue(value, false);

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0-rc.2 — 29 October 2026
+
+- Added Bogie Visual Smoothing, based on the working standalone 0.4.2, with its own switch and manual refresh/report controls.
+- Added duplicate protection so standalone and Toolbox smoothing cannot own the same visuals.
+
 ## 1.0.0-rc.1 — 29 October 2026
 
 - Sign clearance now distinguishes nearby tracks from separate levels at bridges and underpasses.

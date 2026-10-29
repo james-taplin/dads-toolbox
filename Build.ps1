@@ -6,6 +6,7 @@ $taskManagedRoot = Join-Path $GamePath 'DerailValley_Data\Managed'
 $taskReferences = @('mscorlib.dll', 'System.dll', 'System.Core.dll', 'System.Xml.dll', 'Assembly-CSharp.dll',
     'UnityEngine.dll', 'UnityEngine.CoreModule.dll', 'UnityEngine.IMGUIModule.dll',
     'UnityEngine.ParticleSystemModule.dll', 'UnityEngine.AudioModule.dll', 'UnityEngine.PhysicsModule.dll',
+    'UnityEngine.AnimationModule.dll', 'WorldStreamer.dll',
     'DV.RailTrack.dll', 'DV.PointSet.dll', 'DV.OriginShiftInfo.dll', 'DV.Utils.dll', 'net.smkd.vector3d.dll',
     'DV.ThingTypes.dll', 'DV.Simulation.dll', 'DV.LayeredAudio.dll', 'DV.NAudio.dll',
     'DV.UI.dll', 'DV.Interaction.dll', 'DV.CabControls.Spec.dll', 'Rewired_Core.dll',
@@ -32,7 +33,7 @@ $taskReceipt = [ordered]@{
     compiler = $taskCompiler; compilerSha256 = (Get-FileHash -LiteralPath $taskCompiler).Hash
     sources = @($taskSources | ForEach-Object { Get-FileHash -LiteralPath $_ | Select-Object Path, Hash })
     references = @($taskReferences | ForEach-Object { Get-FileHash -LiteralPath (Join-Path $taskManagedRoot $_) | Select-Object Path, Hash })
-    scope = 'Dad''s Toolbox development package: HUD Guard, CCL Control Fix, Loco Sound Pitch, two Skin Manager fixes, CCL Smoke Fix and DoubleTrack sign clearance. No game launch or installation.'
+    scope = 'Dad''s Toolbox release candidate: HUD Guard, CCL Control Fix, Loco Sound Pitch, two Skin Manager fixes, CCL Smoke Fix, DoubleTrack sign clearance and Bogie Visual Smoothing. No game launch or installation.'
 }
 $taskReceipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $taskBuildRoot 'build-receipt.json') -Encoding utf8
 Write-Output "Built $taskOutput"

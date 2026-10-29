@@ -323,7 +323,7 @@ public static class NativeSkinRegistrationChecks
     {
         var parentPath = Path.Combine(output, "parent"); Directory.CreateDirectory(parentPath);
         // Previous Toolbox settings did not have the registration option.
-        File.WriteAllText(Path.Combine(parentPath, "Settings.xml"), "<ToolboxSettings><SkinDamageFix>true</SkinDamageFix><DoubleTrackSignClearance>false</DoubleTrackSignClearance></ToolboxSettings>");
+        File.WriteAllText(Path.Combine(parentPath, "Settings.xml"), "<ToolboxSettings><SkinDamageFix>true</SkinDamageFix><DoubleTrackSignClearance>false</DoubleTrackSignClearance><BogieVisualSmoothing>false</BogieVisualSmoothing></ToolboxSettings>");
         var parent = Entry("DadsToolbox", parentPath, true, "0.3.0", toolbox); modEntries.Add(parent);
         var main = toolbox.GetType("DadsToolbox.Main");
         main.GetMethod("Load").Invoke(null, new[] { parent });

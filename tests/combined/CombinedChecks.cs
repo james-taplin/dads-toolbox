@@ -19,8 +19,8 @@ public static class CombinedChecks
     static int controlConfigureCalls;
     static void CountControlConfigure() { controlConfigureCalls++; }
     static readonly List<string> report = new List<string>();
-    static readonly string[] Flags = { "SkinDamageFix", "SkinRegistrationFix", "DoubleTrackSignClearance", "HudGuard", "CclControlFix", "LocoSoundPitch", "SmokeFix" };
-    static readonly string[] ModuleFields = { "skinDamage", "skinRegistration", "signs", "hud", "controls", "sound", "smoke" };
+    static readonly string[] Flags = { "SkinDamageFix", "SkinRegistrationFix", "DoubleTrackSignClearance", "HudGuard", "CclControlFix", "LocoSoundPitch", "SmokeFix", "BogieVisualSmoothing" };
+    static readonly string[] ModuleFields = { "skinDamage", "skinRegistration", "signs", "hud", "controls", "sound", "smoke", "bogies" };
     static readonly string[] Owners = {
         "jimtaplin.derailvalley.toolbox.skindamage", "jimtaplin.derailvalley.toolbox.skinregistration",
         "jimtaplin.derailvalley.toolbox.hudguard",
@@ -54,7 +54,7 @@ public static class CombinedChecks
         var parent = Entry("DadsToolbox", Path.Combine(output, "Mods", "DadsToolbox"));
         var asm = typeof(DadsToolbox.Main).Assembly;
         Check(asm.GetName().Name == "DadsToolbox", "one parent assembly identity");
-        string[] forbidden = { "SkinManagerMod", "CCL.Importer", "CCL.Types", "DoubleTrack", "HeadsUpDisplay", "SteamSizePitch", "DVCCLControlFix", "CCLSmokeFix", "HUDGuard", "H6FTrainsetFix" };
+        string[] forbidden = { "SkinManagerMod", "CCL.Importer", "CCL.Types", "DoubleTrack", "HeadsUpDisplay", "SteamSizePitch", "DVCCLControlFix", "CCLSmokeFix", "HUDGuard", "H6FTrainsetFix", "DVLocoBogieVisuals" };
         Check(!asm.GetReferencedAssemblies().Any(a => forbidden.Contains(a.Name)), "optional mod assemblies are not hard assembly references");
         Check(Owners.Distinct().Count() == Owners.Length, "all patching features reserve distinct owner IDs");
         Check(asm.GetType("DadsToolbox.H6F.H6FModule") == null, "retired H6F module is absent from shipped DLL");
@@ -155,6 +155,10 @@ public static class CombinedChecks
         return failed == 0 ? 0 : 1;
     }
     static ToolboxSettings SettingsFor(int mask) { var s = new ToolboxSettings(); for (int i = 0; i < Flags.Length; i++) Set(s, Flags[i], (mask & (1 << i)) != 0); return s; }
+    // Bogie smoothing also supports vanilla stock and requires Unity native
+    // objects, so its active lifecycle belongs to the separate native suite.
+    static ToolboxSettings ColdSettings() { var s = SettingsFor((1 << Flags.Length) - 1); s.BogieVisualSmoothing = false; return s; }
+    static bool ColdChoicesPreserved() { return Flags.Where(f => f != "BogieVisualSmoothing").All(f => GetFlag(ParentField("settings"), f)) && !GetFlag(ParentField("settings"), "BogieVisualSmoothing"); }
     static void FinalUnloadFailureChecks(UnityModManager.ModEntry parent)
     {
         SettingsFor(0).Save(parent); DadsToolbox.Main.Load(parent);
@@ -188,11 +192,11 @@ public static class CombinedChecks
     }
     static void ColdDependencyChecks(UnityModManager.ModEntry parent)
     {
-        SettingsFor((1 << Flags.Length) - 1).Save(parent);
+        ColdSettings().Save(parent);
         Check(DadsToolbox.Main.Load(parent), "default-selected parent starts with every optional dependency absent");
         try
         {
-            Check(ToolboxPatchCount() == 0 && Flags.All(f => GetFlag(ParentField("settings"), f)), "missing optional dependencies leave all choices selected and install no patches");
+            Check(ToolboxPatchCount() == 0 && ColdChoicesPreserved(), "missing optional dependencies preserve selected choices and install no patches; native bogie runtime tested separately");
             Check(GetProperty(ParentField("hud"), "State").ToString() == "WaitingForHud", "HUD Guard waits for absent HUD");
             Check(!(bool)GetProperty(ParentField("controls"), "Active") && ((string)GetProperty(ParentField("controls"), "Status")).Contains("CCL"), "CCL controls wait for optional CCL");
             Check(!(bool)GetProperty(ParentField("sound"), "Active") && ((string)GetProperty(ParentField("sound"), "Status")).Contains("CCL"), "Loco Sound Pitch waits for optional CCL without touching native audio");
@@ -205,7 +209,7 @@ public static class CombinedChecks
                 typeof(DadsToolbox.Main).GetMethod("OnDependencyToggle", BF).Invoke(null, new object[] { mod, false });
             }
             Check(UnityModManager.modEntries.All(m => m.Loaded && !m.Active && m.Enabled) && ToolboxPatchCount() == 0, "loaded but inactive optional dependencies remain ineligible despite Enabled preferences");
-            Check(Flags.All(f => GetFlag(ParentField("settings"), f)) && ParentSubscriptions() == 1, "dependency events preserve all desired choices and the single parent listener");
+            Check(ColdChoicesPreserved() && ParentSubscriptions() == 1, "dependency events preserve all desired choices and the single parent listener");
             Check(parent.OnToggle(parent, false), "default-selected dependency-waiting parent disables cleanly");
             var stoppedSound = ParentField("sound");
             stoppedSound.GetType().GetMethod("Refresh", BF).Invoke(stoppedSound, null);
@@ -219,14 +223,14 @@ public static class CombinedChecks
         var soundStandalone = Entry("SteamSizePitch", Path.Combine(output, "conflicts", "SteamSizePitch"));
         controlStandalone.Enabled = true; soundStandalone.Enabled = true;
         UnityModManager.modEntries.Add(controlStandalone); UnityModManager.modEntries.Add(soundStandalone);
-        SettingsFor((1 << Flags.Length) - 1).Save(parent);
+        ColdSettings().Save(parent);
         Check(DadsToolbox.Main.Load(parent), "standalone conflicts do not prevent whole parent startup");
         try
         {
             Check(!(bool)GetProperty(ParentField("controls"), "Active") && ((string)GetProperty(ParentField("controls"), "Status")).Contains("restart"), "loaded inactive Controls standalone blocks its feature with restart instruction");
             Check(!(bool)GetProperty(ParentField("sound"), "Active") && ((string)GetProperty(ParentField("sound"), "Status")).Contains("SteamSizePitch") && ((string)GetProperty(ParentField("sound"), "Status")).Contains("restart"), "loaded inactive Sound standalone blocks its feature with restart instruction");
             Check(controlStandalone.Loaded && soundStandalone.Loaded && controlStandalone.Enabled && soundStandalone.Enabled && !controlStandalone.Active && !soundStandalone.Active, "parent does not disable or alter conflicting standalone entries");
-            Check(ToolboxPatchCount() == 0 && Flags.All(f => GetFlag(ParentField("settings"), f)), "standalone conflicts preserve every independent desired choice");
+            Check(ToolboxPatchCount() == 0 && ColdChoicesPreserved(), "standalone conflicts preserve every independent desired choice");
         }
         finally { parent.OnUnload(parent); UnityModManager.modEntries.Clear(); }
     }

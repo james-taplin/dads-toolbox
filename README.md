@@ -2,7 +2,7 @@
 
 A collection of fixes and tweaks for Derail Valley, together in one Unity Mod Manager mod. Turn each fix on or off independently, with extra settings for sound pitch and sign clearance.
 
-**1.0.0-rc.1** is a release candidate for testing. [Changelog](CHANGELOG.md) · [User guide](docs/README.md)
+**1.0.0-rc.2** is a release candidate for testing. [Changelog](CHANGELOG.md) · [User guide](docs/README.md)
 
 The latest published download is [0.4.5-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.5-dev).
 
@@ -16,6 +16,7 @@ The latest published download is [0.4.5-dev](https://github.com/james-taplin/dad
 | Skin Manager fixes | Preserves scorch on exploded vehicles and helps skins bundled with CCL vehicles load correctly. Two separate switches. |
 | CCL Smoke Fix | Corrects stack-smoke colour and opacity on affected CCL locomotives. |
 | DoubleTrack sign clearance | Moves generated signs clear of nearby tracks. |
+| Bogie Visual Smoothing | Smooths visual copies of bogies while retaining native steering, physics and wheel/rod animation. Supports vanilla and CCL stock. |
 
 Only the fixes relevant to your installed mods run. A missing dependency leaves that fix inactive and keeps your chosen settings.
 
@@ -27,6 +28,8 @@ Only the fixes relevant to your installed mods run. A missing dependency leaves 
 
 Keep CCL, Skin Manager, HeadsUpDisplay and DoubleTrack installed if you use their fixes. Loco Sound Pitch cannot run alongside ZSounds.
 
+Bogie Visual Smoothing replaces the standalone DVLocoBogieVisuals mod. Remove the standalone from the game's Mods folder and restart before enabling the Toolbox copy; only one may run.
+
 Restart after changing mods or when you need to undo changes already applied to vehicles or signs. See the [user guide](docs/README.md) for compatibility and toggle behaviour.
 
 ## Building from source
@@ -37,4 +40,4 @@ On Windows, with a .NET SDK and Derail Valley installed:
 .\Build.ps1 -GamePath 'C:\path\to\Derail Valley'
 ~~~
 
-[Technical validation](docs/VALIDATION-1.0.0-rc.1.md) is available for contributors.
+[Technical validation](docs/VALIDATION-1.0.0-rc.2.md) is available for contributors.

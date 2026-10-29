@@ -20,6 +20,7 @@ namespace DadsToolbox
         public bool SkinDamageFix = true;
         public bool SkinRegistrationFix = true;
         public bool DoubleTrackSignClearance = true;
+        public bool BogieVisualSmoothing = true;
         public SignClearanceOptions SignClearance = new SignClearanceOptions();
         public SoundOptions Sound = new SoundOptions();
         public bool SoundSettingsMigrationComplete;
@@ -45,6 +46,7 @@ namespace DadsToolbox
         private static SmokeFixModule smoke;
         private static ControlsModule controls;
         private static SoundPitchModule sound;
+        private static BogieVisualModule bogies;
         private static bool enabled, loaded, finalShutdownStarted;
         private static string status, registrationStatus, migrationStatus, smokeStatus;
         private static readonly Dictionary<string, string> faults = new Dictionary<string, string>();
@@ -66,6 +68,7 @@ namespace DadsToolbox
             controls = new ControlsModule(text => Log("CCL Control Fix", text));
             sound = new SoundPitchModule(settings.Sound, text => Log("Loco Sound Pitch", text),
                 entry.Path, SoundConflict);
+            bogies = new BogieVisualModule(entry.Logger, entry.Path);
             entry.OnGUI = OnGUI; entry.OnSaveGUI = OnSaveGUI; entry.OnToggle = OnToggle;
             entry.OnUnload = OnUnload; entry.OnUpdate = OnUpdate;
             UnityModManager.toggleModsListen -= OnDependencyToggle;
@@ -85,6 +88,7 @@ namespace DadsToolbox
             Run("Skin damage", ApplySkinSettings);
             Run("Skin registration", ApplyRegistrationSettings);
             Run("DoubleTrack signs", () => signs.Configure(settings.DoubleTrackSignClearance, enabled));
+            Run("Bogie Visual Smoothing", () => bogies.Configure(settings.BogieVisualSmoothing, enabled));
         }
 
         private static void ApplySmokeSettings()
@@ -171,6 +175,8 @@ namespace DadsToolbox
                 Run("CCL Control Fix", () => controls.Refresh());
             if (id == "SteamSizePitch" || id == "ZSounds" || id == "DVCustomCarLoader")
                 Run("Loco Sound Pitch", () => sound.Refresh());
+            if (id == BogieVisualModule.StandaloneId)
+                Run("Bogie Visual Smoothing", () => bogies.Refresh());
         }
 
         private static bool OnToggle(UnityModManager.ModEntry mod, bool value)
@@ -194,6 +200,7 @@ namespace DadsToolbox
             ok &= Cleanup("HUD Guard", () => final ? hud.Unload() : hud.Stop());
             ok &= Cleanup("CCL Control Fix", () => final ? controls.Unload() : controls.Stop());
             ok &= Cleanup("Loco Sound Pitch", () => final ? sound.Unload() : sound.Stop());
+            ok &= Cleanup("Bogie Visual Smoothing", () => final ? bogies.Unload() : bogies.Stop());
             ok &= Cleanup("CCL Smoke Fix", () => smoke.Stop());
             ok &= Cleanup("Skin damage", () => { skinDamage.Uninstall(); SetStatus("Toolbox disabled"); return !skinDamage.Active; });
             ok &= Cleanup("Skin registration", () => { skinRegistration.Uninstall(); registrationStatus = "Toolbox disabled"; return !skinRegistration.Active; });
@@ -220,6 +227,7 @@ namespace DadsToolbox
             if (!loaded || finalShutdownStarted) return;
             Run("HUD Guard", () => { hud.Configure(settings.HudGuard, enabled); hud.Tick(); });
             Run("CCL Control Fix", () => controls.Tick());
+            Run("Bogie Visual Smoothing", () => bogies.Tick());
             if (enabled)
             {
                 Run("DoubleTrack signs", () => signs.Tick(Time.realtimeSinceStartup));
@@ -229,7 +237,7 @@ namespace DadsToolbox
 
         private static void OnGUI(UnityModManager.ModEntry mod)
         {
-            GUILayout.Label("Dad's Toolbox — 1.0.0 release candidate");
+            GUILayout.Label("Dad's Toolbox — 1.0.0-rc.2");
             Option(ref settings.HudGuard, "HUD Guard", hud.Status);
             Option(ref settings.CclControlFix, "CCL Control Fix", controls.Status);
             GUILayout.Label("Existing control/prefab changes require restart for complete restoration.");
@@ -257,6 +265,10 @@ namespace DadsToolbox
             settings.SignClearance.VerboseLogging = GUILayout.Toggle(settings.SignClearance.VerboseLogging, "Log each corrected sign");
             if (GUILayout.Button("Re-scan DoubleTrack signs")) Run("DoubleTrack signs", () => signs.Refresh());
             GUILayout.Label("Previously moved signs require restart for exact restoration.");
+            Option(ref settings.BogieVisualSmoothing, "Bogie Visual Smoothing", bogies.Status);
+            GUILayout.Label("Smooths visual copies; native steering, physics and animation remain authoritative.");
+            if (GUILayout.Button("Refresh mapped bogie visuals")) Run("Bogie Visual Smoothing", () => bogies.Refresh());
+            if (GUILayout.Button("Write bogie coverage report")) Run("Bogie Visual Smoothing", () => bogies.WriteCoverage());
             if (GUILayout.Button("Retry optional features"))
             {
                 faults.Clear();
@@ -264,6 +276,7 @@ namespace DadsToolbox
                 Run("CCL Control Fix", () => controls.Refresh());
                 Run("Loco Sound Pitch", () => sound.Refresh());
                 Run("DoubleTrack signs", () => signs.Refresh());
+                Run("Bogie Visual Smoothing", () => bogies.Refresh());
                 ApplySettings();
             }
         }
@@ -343,6 +356,7 @@ namespace DadsToolbox
                         case "HUD Guard": return hud.Stop();
                         case "CCL Control Fix": return controls.Stop();
                         case "Loco Sound Pitch": return sound.Stop();
+                        case "Bogie Visual Smoothing": return bogies.Stop();
                         case "CCL Smoke Fix": return smoke.Stop();
                         case "Skin damage": skinDamage.Uninstall(); return !skinDamage.Active;
                         case "Skin registration": skinRegistration.Uninstall(); return !skinRegistration.Active;

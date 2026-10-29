@@ -1,6 +1,6 @@
 # Dad's Toolbox user guide
 
-Version 1.0.0-rc.1 is a release candidate for testing before the stable release.
+Version 1.0.0-rc.2 is a release candidate for testing before the stable release.
 
 Each fix has its own switch in Unity Mod Manager. Its status tells you whether it is active, waiting for a dependency or blocked by another mod. Your choices stay saved even when a dependency is missing.
 
@@ -13,6 +13,7 @@ Each fix has its own switch in Unity Mod Manager. Its status tells you whether i
 | Skin scorch protection | Skin Manager 4.4.1 |
 | Embedded-skin registration | Skin Manager 4.4.1 and CCL 3.1.9 or newer |
 | Sign clearance | DoubleTrack 2.1.1 |
+| Bogie Visual Smoothing | No additional mod; supports vanilla and CCL stock |
 
 Embedded-skin registration has been checked with CCL 3.1.11. Newer CCL versions are allowed when the required interfaces match; future updates can still introduce incompatibilities.
 
@@ -20,6 +21,7 @@ Embedded-skin registration has been checked with CCL 3.1.11. Newer CCL versions 
 
 - **Sound pitch:** steam scales by boiler barrel area; diesel and other non-steam locomotives scale by empty mass. Smaller/lighter than the sound donor gives higher pitch; larger/heavier gives lower pitch. Each has separate lower and upper pitch caps and an effect-strength percentage. A 100% pitch cap means original pitch; 0% strength disables the effect, 100% is normal strength, and higher values make it stronger. Existing settings keep their meaning. The fix targets native exterior audio; stock locomotives, cab audio and custom recordings are protected.
 - **Sign clearance:** choose the minimum horizontal clearance and maximum movement. Defaults are 2 m and 8 m. Tracks on clearly separate levels are ignored. Use **Re-scan signs** after changing clearance settings.
+- **Bogie Visual Smoothing:** uses visual copies while native physics, steering and animation remain authoritative. **Refresh mapped bogie visuals** remaps loaded vehicles; **Write bogie coverage report** writes a manual snapshot. Maintenance timing is shown in its status and covers maintenance work, not total feature cost.
 - **Retry optional features:** retry a fix after resolving a dependency or reported error.
 
 ## Switching from standalone fixes
@@ -34,6 +36,12 @@ Loco Sound Pitch is incompatible with ZSounds. Choose which one you want to use.
 
 When updating Toolbox, keep its Settings.xml to preserve your preferences.
 
+For DVLocoBogieVisuals, close the game, back up its mod folder, and move that
+folder outside the game's Mods directory before the next launch. Keep the
+standalone source/package as a fallback. The Toolbox copy stays inactive while
+the standalone is loaded, even if its UMM checkbox was unticked mid-session.
+Bogie Edge Diagnostic Probe remains a separate mod.
+
 ## Toggles and restarts
 
 | Fix | Effect of turning it off |
@@ -45,6 +53,7 @@ When updating Toolbox, keep its Settings.xml to preserve your preferences.
 | Sign clearance | Future moves stop. Restart to restore signs already moved. |
 | Embedded-skin registration | Future recovery stops. Skins already loaded remain available for the session. |
 | Skin scorch protection | Future skin reloads are unprotected. Enabling it cannot restore scorch already overwritten. |
+| Bogie Visual Smoothing | Stops sampling and camera callbacks, cancels mapping, removes visual copies and restores surviving native renderers. Re-enabling creates a fresh runtime. |
 
 For a clean comparison with a fix disabled, restart the game.
 

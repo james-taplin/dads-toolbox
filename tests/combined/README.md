@@ -4,7 +4,7 @@ Run `tests/combined/Run.ps1` after building the final combined DLL. The fixture
 loads that exact DLL with the installed Unity Mod Manager and Harmony under
 .NET Framework. It does not compile a substitute parent.
 
-It checks all 128 combinations of the seven persisted internal switches using
+It checks all 256 combinations of the eight persisted internal switches using
 native UMM XML serialization, older parent settings, nested sound preferences,
 the single parent callback and dependency subscription, off/disabled lifecycle,
 default-selected cold dependency absence/inactivity, standalone conflicts,
@@ -18,9 +18,10 @@ Manager corrections remain independently selectable within the Skin Manager
 feature.
 
 Features are off or blocked by deliberately absent/inactive dependencies during
-CLR-only parent activation. Audio activation needs real Unity APIs; each module's active behavior is covered separately at its
+CLR-only parent activation. Bogie smoothing supports vanilla stock and is explicitly
+off here; its active lifecycle runs in the native bogie suite. Audio activation needs real Unity APIs; each module's active behavior is covered separately at its
 documented evidence level. These XML combinations are exhaustive preference
-roundtrips, not 128 gameplay scenarios.
+roundtrips, not 256 gameplay scenarios.
 
 `evidence/combined/receipt.json` identifies the exact DLL, runner, source,
 references and verdict hashes. `WriteValidation.ps1` requires this receipt as

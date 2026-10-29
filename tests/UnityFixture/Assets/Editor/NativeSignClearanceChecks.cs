@@ -165,7 +165,7 @@ public static class NativeSignClearanceChecks
             entries.Add(dependency); entries.Add(skinEntry);
             // Clean fixture settings make repeated runs independent.
             string settingsPath=Path.Combine((string)Get(parent,"Path"),"Settings.xml");
-            File.WriteAllText(settingsPath,"<ToolboxSettings><SkinDamageFix>true</SkinDamageFix><DoubleTrackSignClearance>true</DoubleTrackSignClearance></ToolboxSettings>");
+            File.WriteAllText(settingsPath,"<ToolboxSettings><SkinDamageFix>true</SkinDamageFix><DoubleTrackSignClearance>true</DoubleTrackSignClearance><BogieVisualSmoothing>false</BogieVisualSmoothing></ToolboxSettings>");
             Check((bool)main.GetMethod("Load").Invoke(null,new[]{parent}),"actual combined Toolbox parent loads with both optional mods");
             Check(Active && SkinActive,"both corrections become active without sharing runtime ownership");
             Check(Object.FindObjectsOfType<MonoBehaviour>().All(x=>x.GetType().Name!="ClearanceWatcher"),"integrated signs use parent UMM update without a legacy watcher");

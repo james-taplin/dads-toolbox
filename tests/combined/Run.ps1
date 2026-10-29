@@ -30,7 +30,7 @@ if ($taskText -notmatch 'RESULT: (\d+) passed, 0 failed\.') { throw 'Combined pa
     toolbox = Get-FileHash -LiteralPath $taskBinary | Select-Object Path,Hash
     inputs = @(@($taskReferences) + @($taskSource,$PSCommandPath,$taskCompiler) | ForEach-Object { Get-FileHash -LiteralPath $_ | Select-Object Path,Hash })
     verdict = Get-FileHash -LiteralPath $taskVerdict | Select-Object Path,Hash
-    scope = 'Exact combined DLL parent, seven independent preferences/all 128 native UMM XML combinations, older settings and real sibling sound-settings migration with byte preservation/precedence/retry, sole callback/event ownership, off/disabled and default-selected dependency-absent/inactive lifecycles, standalone conflicts, fresh recreation, injected failed cleanup with all seven cleanup attempts and foreign-owner preservation. No native Unity/game/audio execution.'
+    scope = 'Exact combined DLL parent, eight independent preferences/all 256 native UMM XML combinations, older settings and sibling sound-settings migration, sole callback/event ownership, off/disabled and optional dependency-waiting lifecycles, standalone conflicts, recreation, all eight cleanup attempts and foreign-owner preservation. Active vanilla-capable bogie runtime is validated separately in Unity; no native Unity/game/audio execution in this suite.'
 } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $taskEvidence 'receipt.json') -Encoding utf8
 Write-Output "Recorded combined parent validation for $((Get-FileHash -LiteralPath $taskBinary).Hash)"
 
