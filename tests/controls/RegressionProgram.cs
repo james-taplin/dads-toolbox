@@ -206,6 +206,41 @@ class RegressionProgram
             Hold("BrakeIncremental"); f.TickRepairs(); Assert(rear.setCalls == 0, "ambiguous author orientation guessed for backup");
             Assert(logMessages.Any(x => x.Contains("disagree", StringComparison.OrdinalIgnoreCase) && x.Contains("BrakeIncremental")), "ambiguous authored direction was not reported");
         });
+        Run("shared input action metadata is reused without caching per-instance bindings", () => {
+            Assert(ConnectedValueKeyboardInput.ReleaseAll(), "initial cache cleanup failed");
+            var f = new Fixture("metadataReuse"); var a = f.Control("front", "brake.EXT_IN"); var b = f.Control("rear", "brake.EXT_IN");
+            var first = Author(a, "BrakeIncremental", false); var second = Author(b, "BrakeIncremental", true);
+            var fields = ConnectedValueKeyboardInput.GetActionFields(first.GetType());
+            Assert(fields.Length == 1 && fields.All(field => field.FieldType == typeof(AKeyboardInput.ActionReference)), "cache contains more than action field metadata");
+            for (int i = 0; i < 128; i++)
+                Assert(ReferenceEquals(fields, ConnectedValueKeyboardInput.GetActionFields(second.GetType())), "steady lookup rebuilt the action field array");
+            Assert(!ReferenceEquals(fields[0].GetValue(first), fields[0].GetValue(second)), "metadata lookup reused another component's action object");
+            Assert(ConnectedValueKeyboardInput.ReleaseAll(), "cache cleanup failed");
+            Assert(!ReferenceEquals(fields, ConnectedValueKeyboardInput.GetActionFields(first.GetType())), "parent cleanup retained the action metadata cache");
+        });
+        Run("cached metadata still observes replaced actions and changing author direction", () => {
+            var f = new Fixture("liveDirection"); var a = f.Control("front", "brake.EXT_IN"); var b = f.Control("rear", "brake.EXT_IN"); b.Value = .5f;
+            var author = (MouseScrollKeyboardInput)Author(a, "BrakeIncremental"); author.reachable = false; f.Process();
+            foreach (var k in f.Repairs) k.reachable = k.gameObject == b.gameObject;
+            Hold("BrakeIncremental"); f.TickRepairs(); Assert(b.Value > .5f, "initial author direction was not used");
+            author.scrollAction = new AKeyboardInput.ActionReference { name = "BrakeIncremental", flip = true };
+            Time.frameCount++; f.TickRepairs(); Near(b.Value, .5f, "replacement action's flip was cached incorrectly");
+            a.InvertScrollingDirection = true;
+            Time.frameCount++; f.TickRepairs(); Assert(b.Value > .5f, "runtime scrolling inversion was cached incorrectly");
+            a.GetComponent<Lever>().scrollWheelHoverScroll = -.025f;
+            Time.frameCount++; f.TickRepairs(); Near(b.Value, .5f, "signed scroll policy was cached incorrectly");
+            author.reachable = true; int before = b.setCalls;
+            Time.frameCount++; f.TickRepairs(); Assert(b.setCalls == before, "reachable replacement binding did not regain authority");
+        });
+        Run("cached metadata observes author action-name changes during a held backup key", () => {
+            var f = new Fixture("liveBinding"); var a = f.Control("front", "brake.EXT_IN"); var b = f.Control("rear", "brake.EXT_IN"); b.Value = .5f;
+            var author = (MouseScrollKeyboardInput)Author(a, "OtherIncremental"); f.Process();
+            foreach (var k in f.Repairs) k.reachable = k.gameObject == b.gameObject;
+            Hold("BrakeIncremental"); f.TickRepairs(); Assert(b.setCalls == 1, "unrelated author binding suppressed the backup");
+            author.scrollAction = new AKeyboardInput.ActionReference { name = "BrakeIncremental" };
+            Time.frameCount++; f.TickRepairs(.3f);
+            Assert(b.setCalls == 1 && b.ReleaseCalls == 0, "replaced reachable author binding was ignored or released");
+        });
         Run("rear backup retains native onlyScrollOnce repeat policy", () => {
             var f = new Fixture("authorOnce"); var a = f.Control("front", "brake.EXT_IN"); var b = f.Control("rear", "brake.EXT_IN"); var author = (MouseScrollKeyboardInput)Author(a, "BrakeIncremental"); author.onlyScrollOnce = true; author.reachable = false; f.Process(); foreach (var k in f.Repairs) k.reachable = k.gameObject == b.gameObject;
             Hold("BrakeIncremental"); f.TickRepairs(); Time.frameCount++; f.TickRepairs(.5f); Assert(b.setCalls == 1, "onlyScrollOnce backup repeated while held"); InputManager.NewPlayer.Reset(); Time.frameCount++; f.TickRepairs(); Hold("BrakeIncremental"); Time.frameCount++; f.TickRepairs(); Assert(b.setCalls == 2, "onlyScrollOnce backup failed to rearm after key-up");

@@ -76,6 +76,6 @@ $taskReceipt = [ordered]@{
     passed = $taskNativeCount + $taskRuleCount
     failed = 0
     exitCode = 0
-    scope = 'Source-linked bidirectional steam boiler-area/non-steam mass rules plus exact-DLL native AudioSource/one-shot pitch writes, caps, strength, ownership and lifecycle fixtures. Seeded catalogue and controlled inactive car. No game boot, real pack discovery, audible playback or performance acceptance.'
+    scope = 'Source-linked bidirectional steam boiler-area/non-steam mass rules plus exact-DLL native AudioSource/one-shot/Doppler desired-and-applied pitch writes, curve/caps/strength/restoration, ownership and lifecycle fixtures. Seeded catalogue and inactive car; isolated active audio-only node verifies many-layer discovery, metadata refresh, shared hierarchy inventory and diagnostic cleanup. No game boot, real pack discovery, audible playback or live performance acceptance.'
 }
 $taskReceipt | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $taskEvidence 'receipt.json') -Encoding utf8

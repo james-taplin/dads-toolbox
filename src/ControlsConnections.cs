@@ -32,6 +32,19 @@ public class ConnectedValueKeyboardInput : AKeyboardInput
     private static readonly HashSet<string> DispatchedThisFrame = new HashSet<string>();
     private static int dispatchFrame = -1;
     private static readonly Dictionary<Type, PropertyInfo> BlockProperties = new Dictionary<Type, PropertyInfo>();
+    private static readonly Dictionary<Type, FieldInfo[]> ActionFields = new Dictionary<Type, FieldInfo[]>();
+    // Cache type metadata only. Action objects and lever policy remain live
+    // reads so author bindings can change without retaining cab instances.
+    internal static FieldInfo[] GetActionFields(Type type)
+    {
+        if (!ActionFields.TryGetValue(type, out var fields))
+        {
+            fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public)
+                .Where(field => field.FieldType == typeof(ActionReference)).ToArray();
+            ActionFields[type] = fields;
+        }
+        return fields;
+    }
     // Only initialized live bindings need proactive momentary release on a
     // parent stop. Weak references do not retain streamed-out cab objects.
     private static readonly List<WeakReference> LiveBindings = new List<WeakReference>();
@@ -60,7 +73,7 @@ public class ConnectedValueKeyboardInput : AKeyboardInput
         }
         if (success)
         {
-            LiveBindings.Clear(); Owners.Clear(); BlockProperties.Clear();
+            LiveBindings.Clear(); Owners.Clear(); BlockProperties.Clear(); ActionFields.Clear();
             // Keep this frame's dispatch stamp across a synchronous parent
             // off/on transition, just as ordinary input-owner handoff does.
         }
@@ -152,10 +165,9 @@ public class ConnectedValueKeyboardInput : AKeyboardInput
         foreach (var existing in existingSharedInputs)
         {
             if (existing == null) continue;
-            foreach (var field in existing.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public))
+            foreach (var field in GetActionFields(existing.GetType()))
             {
-                if (field.FieldType != typeof(ActionReference) ||
-                    !(field.GetValue(existing) is ActionReference authored) || authored.name != incremental.name) continue;
+                if (!(field.GetValue(existing) is ActionReference authored) || authored.name != incremental.name) continue;
                 var spec = existing.GetComponent<Lever>();
                 var lever = existing.GetComponent<ControlImplBase>() as LeverBase;
                 var mouse = existing as MouseScrollKeyboardInput;
@@ -226,9 +238,8 @@ public class ConnectedValueKeyboardInput : AKeyboardInput
                 // state, and native toggles bypass movement/block checks.
                 // A reachable author binding therefore remains authoritative.
                 if (existing == null || !existing.PlayerCanReach()) continue;
-                foreach (var field in existing.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public))
-                    if (field.FieldType == typeof(ActionReference) &&
-                        field.GetValue(existing) is ActionReference authored && authored.name == action.name) return true;
+                foreach (var field in GetActionFields(existing.GetType()))
+                    if (field.GetValue(existing) is ActionReference authored && authored.name == action.name) return true;
             }
         return false;
     }

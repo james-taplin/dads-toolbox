@@ -1,8 +1,8 @@
 {
   "Id": "DadsToolbox",
-  "DisplayName": "Dad's Toolbox (development)",
+  "DisplayName": "Dad's Toolbox (release candidate)",
   "Author": "Jim Taplin",
-  "Version": "0.4.5",
+  "Version": "1.0.0",
   "ManagerVersion": "0.27.3",
   "AssemblyName": "DadsToolbox.dll",
   "EntryMethod": "DadsToolbox.Main.Load",

@@ -229,7 +229,7 @@ namespace DadsToolbox
 
         private static void OnGUI(UnityModManager.ModEntry mod)
         {
-            GUILayout.Label("Dad's Toolbox — development candidate");
+            GUILayout.Label("Dad's Toolbox — 1.0.0 release candidate");
             Option(ref settings.HudGuard, "HUD Guard", hud.Status);
             Option(ref settings.CclControlFix, "CCL Control Fix", controls.Status);
             GUILayout.Label("Existing control/prefab changes require restart for complete restoration.");

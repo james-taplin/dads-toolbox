@@ -76,15 +76,15 @@ public static class NativeSignClearanceChecks
         if (handler!=null) handler.DynamicInvoke(entry,value);
     }
 
-    static Component Track(string name, float x)
+    static Component Track(string name, float x, float startHeight=0, float endHeight=0)
     {
         var root=Keep(new GameObject(name)); root.SetActive(false);
         var track=root.AddComponent(trackType);
-        SetPointSet(track,x);
+        SetPointSet(track,x,startHeight,endHeight);
         return track;
     }
 
-    static void SetPointSet(Component track, float x)
+    static void SetPointSet(Component track, float x, float startHeight=0, float endHeight=0)
     {
         var psType=T("DV.PointSet.EquiPointSet"); var pointType=psType.GetNestedType("Point",BF);
         var ps=Activator.CreateInstance(psType); var points=Array.CreateInstance(pointType,2);
@@ -92,7 +92,7 @@ public static class NativeSignClearanceChecks
         for(int i=0;i<2;i++)
         {
             var p=Activator.CreateInstance(pointType);
-            Set(p,"position",Activator.CreateInstance(vectorType,new object[]{new Vector3(x,0,i==0?-50:50)}));
+            Set(p,"position",Activator.CreateInstance(vectorType,new object[]{new Vector3(x,i==0?startHeight:endHeight,i==0?-50:50)}));
             Set(p,"forward",Vector3.forward); Set(p,"up",Vector3.up); Set(p,"index",i);
             points.SetValue(p,i);
         }
@@ -106,7 +106,9 @@ public static class NativeSignClearanceChecks
         registryType.GetField("_orderedRailtracks",BF).SetValue(registry,array);
     }
 
-    static GameObject Sign(float x, float y=5, Quaternion? rotation=null)
+    // Actual DoubleTrack places this root at track-curve height, not at the
+    // signboard's centre; the post/board mesh is above the root.
+    static GameObject Sign(float x, float y=0, Quaternion? rotation=null)
     {
         var obj=Keep(new GameObject("Generated DoubleTrack fixture sign"));
         obj.transform.position=new Vector3(x,y,0); obj.transform.rotation=rotation??Quaternion.identity;
@@ -171,12 +173,12 @@ public static class NativeSignClearanceChecks
             Check(Active,"parent update accepts an empty generated-sign list without a fault");
 
             var close=Sign(1); var clear=Sign(-3); var boundary=Sign(2);
-            var opposite=Sign(3,7,Quaternion.Euler(0,180,0)); var unlisted=Sign(.5f);
+            var opposite=Sign(3,.5f,Quaternion.Euler(0,180,0)); var unlisted=Sign(.5f);
             var listed=Signs(close,clear,boundary,opposite);
             Quaternion facing=close.transform.rotation; Refresh(); ParentCallback("OnUpdate",parent,0f);
             Check(Near(close.transform.position.x,-2),"actual parent update moves a close sign clear of both parallel centreline segments");
             Check(Near(opposite.transform.position.x,6),"opposite-facing sign moves in DoubleTrack original outward direction");
-            Check(Near(close.transform.position.y,5) && close.transform.rotation==facing && Near(opposite.transform.position.y,7),"correction retains native sign height and facing");
+            Check(Near(close.transform.position.y,0) && close.transform.rotation==facing && Near(opposite.transform.position.y,.5f),"correction retains native sign height and facing");
             Check(Near(clear.transform.position.x,-3) && Near(boundary.transform.position.x,2),"already-clear and exact-boundary signs stay untouched");
             Check(Near(unlisted.transform.position.x,.5f),"objects outside actual DoubleTrack sign list are untouched");
             Check(Notice,"real transform correction records restart restoration notice");
@@ -187,23 +189,23 @@ public static class NativeSignClearanceChecks
             Check(Near(later.transform.position.x,1),"subsecond updates are throttled before the next scan");
             Tick(11.1f);
             Check(Near(later.transform.position.x,-2),"newly generated signs are corrected on the next one-second scan");
-            close.transform.position=new Vector3(1,5,0); Signs(close); Tick(12.2f);
+            close.transform.position=new Vector3(1,0,0); Signs(close); Tick(12.2f);
             Check(Near(close.transform.position.x,-2),"replacement generated-sign list invalidates processed-sign state");
 
             Set(Options,"MaximumMove",.5f); var limited=Sign(1); Signs(limited); Refresh(); Tick(13.3f);
             Check(Near(limited.transform.position.x,1),"sign remains in place if the configured movement limit has no solution");
             Set(Options,"MaximumMove",8f);
             var shift=new Vector3(1000,20,-2000); shiftField.SetValue(null,shift);
-            var shifted=Sign(1001,25); shifted.transform.position=new Vector3(1001,25,-2000);
+            var shifted=Sign(1001,20); shifted.transform.position=new Vector3(1001,20,-2000);
             Signs(shifted); Refresh(); Tick(14.4f);
-            Check(Near(shifted.transform.position.x,998) && Near(shifted.transform.position.y,25) && Near(shifted.transform.position.z,-2000),
+            Check(Near(shifted.transform.position.x,998) && Near(shifted.transform.position.y,20) && Near(shifted.transform.position.z,-2000),
                 "origin-shifted Unity positions are compared with absolute native track points");
             shiftField.SetValue(null,Vector3.zero);
 
             var replacement=Track("Replacement world railway",10); Tracks(replacement);
             var newWorld=Sign(11); Signs(newWorld); Refresh(); Tick(15.5f);
             Check(Near(newWorld.transform.position.x,8),"registry replacement uses new-world track geometry");
-            SetPointSet(replacement,20); newWorld.transform.position=new Vector3(21,5,0); Refresh(); Tick(16.6f);
+            SetPointSet(replacement,20); newWorld.transform.position=new Vector3(21,0,0); Refresh(); Tick(16.6f);
             Check(Near(newWorld.transform.position.x,18),"manual rescan rebuilds changed point sets even when registry array identity is unchanged");
             Tracks(first,second);
             var destroyed=Sign(1); Signs(destroyed,null); Object.DestroyImmediate(destroyed); Refresh(); Tick(17.7f);
@@ -284,6 +286,7 @@ public static class NativeSignClearanceChecks
             Signs(failureSign); Refresh(); Tick(34.3f);
             Check(Active && Near(failureSign.transform.position.x,-2),"explicit rescan retries successfully after the external list fault is corrected");
 
+            GradeSeparatedClearance(first,second);
             GeometryComparison();
             ParentCallback("OnUnload",parent); var unloaded=Module;
             var afterUnload=Sign(1); Signs(afterUnload); Call(unloaded,"Tick",1000f);
@@ -310,16 +313,76 @@ public static class NativeSignClearanceChecks
         }
     }
 
+    static void GradeSeparatedClearance(Component first, Component second)
+    {
+        var own=Track("Rail-level source railway",0);
+        var bridge=Track("Overhead railway",-3,20,20);
+        Tracks(own,bridge); var belowBridge=Sign(-3); Signs(belowBridge); Refresh(); Tick(101);
+        Check(Active && Near(belowBridge.transform.position.x,-3),
+            "twenty-metre overhead railway cannot move an already-clear rail-level sign");
+
+        SetPointSet(own,0,20,20); SetPointSet(bridge,-3,0,0);
+        var onBridge=Sign(-3,20); Tracks(own,bridge); Signs(onBridge); Refresh(); Tick(102);
+        Check(Active && Near(onBridge.transform.position.x,-3) && Near(onBridge.transform.position.y,20),
+            "twenty-metre lower railway cannot move an already-clear bridge-level sign");
+
+        var closeOnBridge=Sign(1,20); Signs(closeOnBridge); Refresh(); Tick(103);
+        Check(Near(closeOnBridge.transform.position.x,-2) && Near(closeOnBridge.transform.position.y,20),
+            "bridge-level signs still clear their own railway by the full horizontal distance");
+
+        SetPointSet(own,0,2.5f,2.5f); Tracks(own);
+        var modestHeightDifference=Sign(1); Signs(modestHeightDifference); Refresh(); Tick(104);
+        Check(Near(modestHeightDifference.transform.position.x,-2),
+            "small rail-level height differences retain full horizontal clearance rather than a three-dimensional radius");
+
+        SetPointSet(own,0,5,5); var verticalBoundary=Sign(1); Signs(verticalBoundary); Refresh(); Tick(105);
+        Check(Near(verticalBoundary.transform.position.x,-2),
+            "five-metre conservative vertical-envelope boundary still receives full horizontal clearance");
+        SetPointSet(own,0,5.01f,5.01f); var aboveBoundary=Sign(1); Signs(aboveBoundary); Refresh(); Tick(106);
+        Check(Near(aboveBoundary.transform.position.x,1),
+            "railway just beyond the conservative vertical envelope does not shift a clear sign");
+        SetPointSet(own,0,-5,-5); var lowerBoundary=Sign(1); Signs(lowerBoundary); Refresh(); Tick(106.1f);
+        Check(Near(lowerBoundary.transform.position.x,-2),
+            "lower railway at the conservative vertical-envelope boundary retains full horizontal clearance");
+        SetPointSet(own,0,-5.01f,-5.01f); var belowBoundary=Sign(1); Signs(belowBoundary); Refresh(); Tick(106.2f);
+        Check(Near(belowBoundary.transform.position.x,1),
+            "lower railway just outside the conservative vertical envelope cannot move a clear sign");
+
+        SetPointSet(own,0,0,20); var slope=Sign(1,10); Signs(slope); Refresh(); Tick(107);
+        Check(Near(slope.transform.position.x,-2) && Near(slope.transform.position.y,10),
+            "sloped railway uses its interpolated height at the sign's closest horizontal point");
+        SetPointSet(own,0,0,40); var belowSlope=Sign(1); Signs(belowSlope); Refresh(); Tick(108);
+        Check(Near(belowSlope.transform.position.x,1),
+            "sloped railway with a distant local elevation is ignored even when its first endpoint is at sign height");
+
+        SetPointSet(own,0,20,20); Tracks(own,bridge);
+        var shift=new Vector3(1000,30,-2000); shiftField.SetValue(null,shift);
+        var shiftedClear=Sign(997,50); shiftedClear.transform.position=new Vector3(997,50,-2000);
+        var shiftedClose=Sign(1001,50); shiftedClose.transform.position=new Vector3(1001,50,-2000);
+        Signs(shiftedClear,shiftedClose); Refresh(); Tick(109);
+        Check(Near(shiftedClear.transform.position.x,997) && Near(shiftedClear.transform.position.y,50),
+            "origin-shifted grade separation compares absolute sign and railway heights");
+        Check(Near(shiftedClose.transform.position.x,998) && Near(shiftedClose.transform.position.y,50),
+            "origin-shifted bridge-level correction keeps native vertical position while clearing its railway");
+        shiftField.SetValue(null,Vector3.zero); Tracks(first,second); Signs(); Refresh();
+    }
+
     static void GeometryComparison()
     {
         var engine=Get(Module,"engine"); Call(engine,"Reset");
         var add=engine.GetType().GetMethod("AddSegment",BF); var nearest=engine.GetType().GetMethod("TryFindNearestWithin",BF);
+        // Permit running the unchanged planar comparison against the previous
+        // DLL as a baseline for the new transform-based regression cases above.
+        bool elevationAware=add.GetParameters()[0].ParameterType==typeof(Vector3);
         var random=new System.Random(132026); var segments=new List<float[]>();
         for(int i=0;i<120;i++)
         {
             float x=(float)(random.NextDouble()*400-200),z=(float)(random.NextDouble()*400-200);
             float ex=x+(float)(random.NextDouble()*60-30),ez=z+(float)(random.NextDouble()*60-30);
-            segments.Add(new[]{x,z,ex,ez}); add.Invoke(engine,new object[]{new Vector2(x,z),new Vector2(ex,ez),"fixture"});
+            segments.Add(new[]{x,z,ex,ez});
+            object start=elevationAware?(object)new Vector3(x,0,z):new Vector2(x,z);
+            object end=elevationAware?(object)new Vector3(ex,0,ez):new Vector2(ex,ez);
+            add.Invoke(engine,new[]{start,end,"fixture"});
         }
         for(int i=0;i<800;i++)
         {
@@ -330,7 +393,8 @@ public static class NativeSignClearanceChecks
                 double dx=s[2]-s[0],dz=s[3]-s[1],t=((x-s[0])*dx+(z-s[1])*dz)/(dx*dx+dz*dz);
                 t=Math.Max(0,Math.Min(1,t)); double qx=x-(s[0]+t*dx),qz=z-(s[1]+t*dz); best=Math.Min(best,qx*qx+qz*qz);
             }
-            object[] args={new Vector2(x,z),r,null}; bool found=(bool)nearest.Invoke(engine,args);
+            object point=elevationAware?(object)new Vector3(x,0,z):new Vector2(x,z);
+            object[] args={point,r,null}; bool found=(bool)nearest.Invoke(engine,args);
             bool expected=best<r*r-.005f;
             double distance=found?(float)Get(args[2],"Distance"):double.PositiveInfinity;
             Check(found==expected && (!found || Math.Abs(distance-Math.Sqrt(best))<.001),"spatial index against independent complete segment scan "+i);

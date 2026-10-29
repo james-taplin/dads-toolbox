@@ -1,8 +1,12 @@
-param([string]$Path)
+param(
+    [string]$Path,
+    [ValidatePattern('^(dev|rc\.[1-9][0-9]*)?$')][string]$ReleaseSuffix = 'rc.1'
+)
 $ErrorActionPreference = 'Stop'
 if (-not $Path) {
     $taskVersion = (Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'Info.json') | ConvertFrom-Json).Version
-    $Path = Join-Path $PSScriptRoot ('releases\DadsToolbox-' + $taskVersion + '-dev.zip')
+    $taskReleaseVersion = $taskVersion + $(if ($ReleaseSuffix) { '-' + $ReleaseSuffix } else { '' })
+    $Path = Join-Path $PSScriptRoot ('releases\DadsToolbox-' + $taskReleaseVersion + '.zip')
 }
 Add-Type -AssemblyName System.IO.Compression
 $taskExpected = @('Info.json', 'DadsToolbox.dll', 'README.md', 'ISSUE_AND_FIX.md', 'validation.json')

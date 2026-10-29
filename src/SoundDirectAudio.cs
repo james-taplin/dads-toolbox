@@ -32,42 +32,44 @@ namespace DadsToolbox.LocoSound
         internal static void Discover(SoundEngine.Engine engine, StockAudio catalogue, IEnumerable<GameObject> roots)
         {
             if (engine == null || !engine.Car || catalogue == null || roots == null) return;
-            var scanRoots = roots.Where(root => root).Distinct().ToArray();
-            var layeredSources = new HashSet<AudioSource>();
-            foreach (var root in scanRoots)
-                foreach (var audio in root.GetComponentsInChildren<LayeredAudio>(true))
-                    foreach (var layer in audio.layers ?? new LayeredAudio.Layer[0])
-                        if (layer != null && layer.source) layeredSources.Add(layer.source);
+            DiscoverHierarchy(engine, catalogue, new StockAudio.Hierarchy(roots));
+        }
 
-            foreach (var root in scanRoots)
-                foreach (var source in root.GetComponentsInChildren<AudioSource>(true))
+        internal static void DiscoverHierarchy(SoundEngine.Engine engine, StockAudio catalogue, StockAudio.Hierarchy hierarchy)
+        {
+            var layeredSources = new HashSet<AudioSource>();
+            foreach (var audio in hierarchy.Layered)
+                foreach (var layer in audio.layers ?? new LayeredAudio.Layer[0])
+                    if (layer != null && layer.source) layeredSources.Add(layer.source);
+
+            foreach (var source in hierarchy.Sources)
+            {
+                // NAudio's pooled sources are created with playOnAwake=false.
+                // Retired bindings stay recorded until pool/removal cleanup so
+                // a repeat scan cannot adopt a changed pitch as a new baseline.
+                if (!source || !source.playOnAwake || bindings.ContainsKey(source) ||
+                    !source.clip || !PitchRules.Valid(source.pitch) || layeredSources.Contains(source) ||
+                    catalogue.IsCab(source.outputAudioMixerGroup)) continue;
+                if (retired.TryGetValue(source, out var retiredOwner))
                 {
-                    // NAudio's pooled sources are created with playOnAwake=false.
-                    // Retired bindings stay recorded until pool/removal cleanup so
-                    // a repeat scan cannot adopt a changed pitch as a new baseline.
-                    if (!source || !source.playOnAwake || bindings.ContainsKey(source) ||
-                        !source.clip || !PitchRules.Valid(source.pitch) || layeredSources.Contains(source) ||
-                        catalogue.IsCab(source.outputAudioMixerGroup)) continue;
-                    if (retired.TryGetValue(source, out var retiredOwner))
-                    {
-                        if (retiredOwner == engine.Car) continue;
-                        retired.Remove(source);
-                    }
-                    if (!catalogue.Clips.TryGetValue(source.clip, out var info) || info.Donors == 0) continue;
-                    if (LayeredOwner(source) || CabinOwner(source.transform, engine.Car.transform)) continue;
-                    var kind = SoundEngine.KindOf(source.transform, engine.Car.transform);
-                    if (kind == SoundKind.CabEquipment) continue;
-                    if (kind == SoundKind.Unknown) kind = info.Kind;
-                    if (kind == SoundKind.CabEquipment) continue;
-                    var binding = new Binding
-                    {
-                        Engine = engine, Catalogue = catalogue, Clip = source.clip,
-                        Group = source.outputAudioMixerGroup, BasePitch = source.pitch,
-                        ExpectedPitch = source.pitch, Donors = info.Donors, Kind = kind
-                    };
-                    bindings.Add(source, binding);
-                    Apply(source, binding, false);
+                    if (retiredOwner == engine.Car) continue;
+                    retired.Remove(source);
                 }
+                if (!catalogue.Clips.TryGetValue(source.clip, out var info) || info.Donors == 0) continue;
+                if (LayeredOwner(source) || CabinOwner(source.transform, engine.Car.transform)) continue;
+                var kind = SoundEngine.KindOf(source.transform, engine.Car.transform);
+                if (kind == SoundKind.CabEquipment) continue;
+                if (kind == SoundKind.Unknown) kind = info.Kind;
+                if (kind == SoundKind.CabEquipment) continue;
+                var binding = new Binding
+                {
+                    Engine = engine, Catalogue = catalogue, Clip = source.clip,
+                    Group = source.outputAudioMixerGroup, BasePitch = source.pitch,
+                    ExpectedPitch = source.pitch, Donors = info.Donors, Kind = kind
+                };
+                bindings.Add(source, binding);
+                Apply(source, binding, false);
+            }
         }
 
         internal static void Refresh(SoundEngine.Engine only = null)

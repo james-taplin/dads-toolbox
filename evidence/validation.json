@@ -1,10 +1,10 @@
 {
-  "date": "2026-10-28",
+  "date": "2026-10-29",
   "package": "DadsToolbox",
-  "version": "0.4.5",
-  "status": "development candidate; isolated integration verified; live-world acceptance pending",
-  "binarySha256": "890B3898DD4A54D2F0EA2DBF2A0249A08EA9B7594857E6B02E305EF260901A15",
-  "passed": 16965,
+  "version": "1.0.0",
+  "status": "release candidate; isolated integration verified; final live acceptance pending",
+  "binarySha256": "2BD6F0717EB90DC374D79EF5E4C5069C1B6EDE1BA6A090618E35F514F0AF45BD",
+  "passed": 16991,
   "failed": 0,
   "modules": [
     "SkinDamageFix",
@@ -64,7 +64,7 @@
       "evidence": "evidence/skin-damage/native-fixture-checks.txt"
     },
     {
-      "passed": 846,
+      "passed": 858,
       "failed": 0,
       "unityVersion": "2019.4.40f1",
       "scope": "Actual Toolbox parent, installed UMM/DoubleTrack sign list, native registry/RailTrack point sets and Unity Transforms in isolated Unity Editor. Generated rail/list contents and controlled callback dispatch; no full game boot, generation coroutine, real map traversal, saves or GUI.",
@@ -83,7 +83,7 @@
       "failed": 0,
       "scope": "Exact combined DLL parent, seven independent preferences/all 128 native UMM XML combinations, older settings and real sibling sound-settings migration with byte preservation/precedence/retry, sole callback/event ownership, off/disabled and default-selected dependency-absent/inactive lifecycles, standalone conflicts, fresh recreation, injected failed cleanup with all seven cleanup attempts and foreign-owner preservation. No native Unity/game/audio execution.",
       "evidence": "evidence/combined/checks.txt",
-      "receiptSha256": "162F1D82FEF1EDC7AF4A3F8DF64F4DCF79FBBC48B75154116C58636B2093FFDB"
+      "receiptSha256": "BB848D3CE5A72A67A4EA7BA99C1F90420F0A2DB8B4068026BB3D3C4DCA540AAD"
     },
     {
       "id": "hud",
@@ -91,7 +91,7 @@
       "failed": 0,
       "scope": "hud canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
       "evidence": "evidence/hud/checks.txt",
-      "receiptSha256": "F9C067DFC06B2E51C8C556C88503577CEC483FC357944EA3E3E04DFCDF22B30F"
+      "receiptSha256": "3B8EACD7BDED23EA29A50D1D5CA27A5292A60D3B4F45DD0992D5364AB88E8E7A"
     },
     {
       "id": "smoke",
@@ -99,29 +99,29 @@
       "failed": 0,
       "scope": "smoke canonical regression fixture adapted to reference exact combined DLL. Actual installed managed targets/UMM/Harmony; controlled native-body/speed boundaries; no game process or installation.",
       "evidence": "evidence/smoke/checks.txt",
-      "receiptSha256": "5C127B12E04684D274B3783B18BD2AA3D6D38FEF948C2E0922392FCB358B6F5D"
+      "receiptSha256": "C1B2E90539D1F9B8F34D84364B3B66D046DB22A014A6F26E8A990433D8CCB8DF"
     },
     {
       "id": "controls",
-      "passed": 134,
+      "passed": 137,
       "failed": 0,
       "scope": "Actual adapted source regressions using explicit managed Unity/control/input stand-ins and audited native input method excerpts; original23 pure math/key-plan checks; exact DLL lifecycle with actual installed UMM/Harmony/native method targets and inactive synthetic Unity component/shared-port/authored-input/scheduler reference remapping. ActionReference fields are omitted identically by native authored input, original standalone candidate and merged component in this fixture, so their cloning remains unavailable/unverified. Live native controls, Rewired focus, physics, real reach, real locomotive prefabs, save/load and gameplay not executed.",
       "evidence": "evidence/controls/result.json",
-      "receiptSha256": "4EFA7E7ECC96291C6B1CB789B6E332244FE48B85A12E267F8913BDD0B2738A6C"
+      "receiptSha256": "476178314A0F8004B32259D3B99BB35A6DC64678916F32CB574E9ED9A90AAEB1"
     },
     {
       "id": "sound",
-      "passed": 15397,
+      "passed": 15408,
       "failed": 0,
-      "scope": "Source-linked bidirectional steam boiler-area/non-steam mass rules plus exact-DLL native AudioSource/one-shot pitch writes, caps, strength, ownership and lifecycle fixtures. Seeded catalogue and controlled inactive car. No game boot, real pack discovery, audible playback or performance acceptance.",
+      "scope": "Source-linked bidirectional steam boiler-area/non-steam mass rules plus exact-DLL native AudioSource/one-shot/Doppler desired-and-applied pitch writes, curve/caps/strength/restoration, ownership and lifecycle fixtures. Seeded catalogue and inactive car; isolated active audio-only node verifies many-layer discovery, metadata refresh, shared hierarchy inventory and diagnostic cleanup. No game boot, real pack discovery, audible playback or live performance acceptance.",
       "evidence": "evidence/sound/native-fixture-checks.txt",
-      "receiptSha256": "3C825655A145EE0F9AB23258186CA7A4B03564401BE79399619AB159FD1846DC"
+      "receiptSha256": "4C05FDC23BA7761BD92EFAA9DD36A14C815AF042EDCA4A3FBD69708668056DDC"
     }
   ],
   "sourceHashes": [
     {
       "path": "src/AssemblyInfo.cs",
-      "sha256": "0CDC5AF06E0DD9FACD13CF06DCE86FC037DF4F234612C774439DE0CD8E3B6184"
+      "sha256": "4A07E1CF684C85021F43C76B6C3AE00C015A6967D8F0751061EBE0B9FA2D4E7B"
     },
     {
       "path": "src/ControlsBridge.cs",
@@ -129,7 +129,7 @@
     },
     {
       "path": "src/ControlsConnections.cs",
-      "sha256": "BFE3452E7F08D8F591CF80C4887FFCAEB072CFDE83FA5267047057E17A4A2355"
+      "sha256": "CC9757A990FD62FCC212102113BD724E97FB5D7E550E1FEF0B064DA7ED448921"
     },
     {
       "path": "src/ControlsMath.cs",
@@ -145,7 +145,7 @@
     },
     {
       "path": "src/DoubleTrackSigns.cs",
-      "sha256": "D52DCD226EF0D646C9437B429AC63ADD0A0FBA6EB45058F9F65AF5A234971F81"
+      "sha256": "9D0C50ABBB7EF15BD399A24AE6109304D5F49984C58E90FDA633F5433EAAECB7"
     },
     {
       "path": "src/HudGuardModule.cs",
@@ -153,7 +153,7 @@
     },
     {
       "path": "src/Main.cs",
-      "sha256": "855A3C4A942CDC7969B4E5C7798497EA9D6A137878538A19704346FC80A47E2B"
+      "sha256": "03A4DA65F7A846F77A758E63DD97B915A6BC33D65418F3FE3F4DF3F95EA20B78"
     },
     {
       "path": "src/SkinDamageFix.cs",
@@ -173,11 +173,11 @@
     },
     {
       "path": "src/SoundDirectAudio.cs",
-      "sha256": "8F579C2AC9AE107BAC2064C55DB26C0E632DD49638FBEA92F4CDEADEC7BC9BDE"
+      "sha256": "3A156193067DC6E99C26F776209F78B5963F3D805B884EC8FDEA3BB20B9AFCE1"
     },
     {
       "path": "src/SoundEngine.cs",
-      "sha256": "C1EF93CFE86FA735DC1E691BBAE8F75EE185DB02880CC8E733D9DDCC303E92C8"
+      "sha256": "3E17A1E98447F1CA2BF617669C281AC500213CC72CCA5D420E9FA1C0E6B90FF3"
     },
     {
       "path": "src/SoundPitchModule.cs",
@@ -189,7 +189,7 @@
     },
     {
       "path": "src/SoundStockAudio.cs",
-      "sha256": "8E5997A74927BC7305A5D23A3891F0641EE9119780CDBD00C8552FE6F117C1FD"
+      "sha256": "A90012E5110E88D861B97A5F6A60CA62C31B73869745BBEB9C406A7D21FD6D1A"
     }
   ],
   "reproduced": "Skin Manager scorch overwrite; six embedded skin configs rejected before controlled CCL registration and automatically discovered after it with the fix; native DoubleTrack sign transform corrections.",

@@ -1,4 +1,7 @@
-param([string]$GamePath = 'B:\SteamLibrary\steamapps\common\Derail Valley')
+param(
+    [string]$GamePath = 'B:\SteamLibrary\steamapps\common\Derail Valley',
+    [ValidatePattern('^(dev|rc\.[1-9][0-9]*)?$')][string]$ReleaseSuffix = 'rc.1'
+)
 $ErrorActionPreference = 'Stop'
 & (Join-Path $PSScriptRoot 'Build.ps1') -GamePath $GamePath
 $taskValidation = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'evidence\validation.json') | ConvertFrom-Json
@@ -19,14 +22,15 @@ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'evidence\validation.json') -Des
 # Explicit file list prevents a stale staging file or dependency assembly from
 # entering a later package. UMM requires exactly one first-level mod directory.
 $taskPackageFiles = @('Info.json', 'DadsToolbox.dll', 'README.md', 'ISSUE_AND_FIX.md', 'validation.json')
-$taskZip = Join-Path $taskReleaseRoot ("DadsToolbox-" + $taskInfo.Version + '-dev.zip')
+$taskReleaseVersion = $taskInfo.Version + $(if ($ReleaseSuffix) { '-' + $ReleaseSuffix } else { '' })
+$taskZip = Join-Path $taskReleaseRoot ("DadsToolbox-" + $taskReleaseVersion + '.zip')
 Add-Type -AssemblyName System.IO.Compression
 $taskStream = [IO.File]::Open($taskZip, [IO.FileMode]::Create)
 $taskArchive = [IO.Compression.ZipArchive]::new($taskStream, [IO.Compression.ZipArchiveMode]::Create)
 try {
     foreach ($taskName in $taskPackageFiles) {
         $taskZipEntry = $taskArchive.CreateEntry('DadsToolbox/' + $taskName)
-        $taskZipEntry.LastWriteTime = [DateTimeOffset]::new(2026, 10, 28, 0, 0, 0, [TimeSpan]::Zero)
+        $taskZipEntry.LastWriteTime = [DateTimeOffset]::new(2026, 10, 29, 0, 0, 0, [TimeSpan]::Zero)
         $taskInput = [IO.File]::OpenRead((Join-Path $taskPackageRoot $taskName))
         $taskOutput = $taskZipEntry.Open()
         try { $taskInput.CopyTo($taskOutput) } finally { $taskInput.Dispose(); $taskOutput.Dispose() }
@@ -34,7 +38,7 @@ try {
 } finally { $taskArchive.Dispose(); $taskStream.Dispose() }
 
 $taskReceipt = [ordered]@{
-    version = $taskInfo.Version; status = 'development candidate; in-game acceptance pending'
+    version = $taskInfo.Version; releaseVersion = $taskReleaseVersion; status = 'release candidate; final live acceptance pending'
     package = $taskZip; packageSha256 = (Get-FileHash -LiteralPath $taskZip).Hash
     files = @($taskPackageFiles | ForEach-Object { Get-FileHash -LiteralPath (Join-Path $taskPackageRoot $_) | Select-Object Path, Hash })
     installed = $false; gameLaunched = $false; publiclyUploaded = $false

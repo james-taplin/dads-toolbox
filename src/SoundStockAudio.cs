@@ -33,6 +33,33 @@ namespace DadsToolbox.LocoSound
             internal SoundKind Kind;
         }
 
+        // A discovery pass reads each hierarchy once. Components are reused by
+        // role, clip and direct-source discovery instead of repeating native searches.
+        internal sealed class Hierarchy
+        {
+            internal readonly GameObject[] Roots;
+            internal readonly MonoBehaviour[] Components;
+            internal readonly LayeredAudio[] Layered;
+            internal readonly AudioSource[] Sources;
+            internal Hierarchy(IEnumerable<GameObject> roots)
+            {
+                var candidates = roots.Where(root => root).Distinct().ToArray();
+                Roots = candidates.Where(root => !candidates.Any(other => other != root && root.transform.IsChildOf(other.transform))).ToArray();
+                var components = new List<MonoBehaviour>();
+                var sources = new List<AudioSource>();
+                foreach (var root in Roots)
+                {
+                    components.AddRange(root.GetComponentsInChildren<MonoBehaviour>(true));
+                    sources.AddRange(root.GetComponentsInChildren<AudioSource>(true));
+                }
+                Components = components.Where(component => component).ToArray();
+                Layered = Components.OfType<LayeredAudio>().ToArray();
+                Sources = sources.ToArray();
+            }
+        }
+
+        internal struct ModuleInfo { internal bool Cabin; internal int Donors; }
+
         internal readonly List<Donor> Donors = new List<Donor>();
         internal readonly Dictionary<AudioClip, ClipInfo> Clips = new Dictionary<AudioClip, ClipInfo>();
         internal int AllDonors;
@@ -140,6 +167,16 @@ namespace DadsToolbox.LocoSound
             return modules.TryGetValue(Signature(audio, true), out int donors) ? donors : 0;
         }
 
+        internal ModuleInfo AnalyzeModule(LayeredAudio audio)
+        {
+            string signature = Signature(audio, true);
+            modules.TryGetValue(signature, out int donors);
+            bool cabin = IsCab(audio.audioMixerGroup) || CabinMetadata(audio) ||
+                (audio.layers ?? new LayeredAudio.Layer[0]).Any(layer => layer != null && layer.source && IsCab(layer.source.outputAudioMixerGroup)) ||
+                (cabinModules.Contains(signature) && !exteriorModules.Contains(signature));
+            return new ModuleInfo { Cabin = cabin, Donors = donors };
+        }
+
         private static string DisplayName(string id)
         {
             if (string.IsNullOrEmpty(id)) return "Unknown";
@@ -160,8 +197,9 @@ namespace DadsToolbox.LocoSound
         private void CaptureRoot(GameObject root, int donor, HashSet<GameObject> visited)
         {
             if (!root || !visited.Add(root)) return;
-            var roles = Roles(root);
-            foreach (var audio in root.GetComponentsInChildren<LayeredAudio>(true))
+            var hierarchy = new Hierarchy(new[] { root });
+            var roles = Roles(hierarchy);
+            foreach (var audio in hierarchy.Layered)
             {
                 string signature = Signature(audio, false);
                 modules.TryGetValue(signature, out int previous);
@@ -169,7 +207,7 @@ namespace DadsToolbox.LocoSound
                 bool cabin = IsCab(audio.audioMixerGroup) || CabinMetadata(audio);
                 (cabin ? cabinModules : exteriorModules).Add(signature);
             }
-            foreach (var component in root.GetComponentsInChildren<MonoBehaviour>(true))
+            foreach (var component in hierarchy.Components)
             {
                 if (!component) continue;
                 SoundKind kind = ComponentKind(component, root.transform, roles);
@@ -180,7 +218,7 @@ namespace DadsToolbox.LocoSound
                     if (template) CaptureRoot(template.gameObject, donor, visited);
                 foreach (var effect in ReferencedEffects(component)) CaptureRoot(effect, donor, visited);
             }
-            foreach (var source in root.GetComponentsInChildren<AudioSource>(true))
+            foreach (var source in hierarchy.Sources)
                 AddClip(source.clip, donor, PitchRules.Classify(Path(source.transform, root.transform)));
         }
 
@@ -222,15 +260,15 @@ namespace DadsToolbox.LocoSound
             return PitchRules.Classify(Path(component.transform, root));
         }
 
-        private static Dictionary<LayeredAudio, SoundKind> Roles(GameObject root)
+        private static Dictionary<LayeredAudio, SoundKind> Roles(Hierarchy hierarchy)
         {
             var roles = new Dictionary<LayeredAudio, SoundKind>();
-            foreach (var port in root.GetComponentsInChildren<LayeredAudioPortReader>(true))
+            foreach (var port in hierarchy.Components.OfType<LayeredAudioPortReader>())
             {
                 var kind = PitchRules.Classify(port.portId);
                 if (kind != SoundKind.Unknown) SetRole(roles, port.GetComponent<LayeredAudio>(), kind);
             }
-            foreach (var brakes in root.GetComponentsInChildren<BrakesAudioModule>(true))
+            foreach (var brakes in hierarchy.Components.OfType<BrakesAudioModule>())
             {
                 SetRole(roles, brakes.brakeAudio, SoundKind.Brakes);
                 SetRole(roles, brakes.brakeSquealAudio, SoundKind.Brakes);
@@ -239,7 +277,7 @@ namespace DadsToolbox.LocoSound
                 SetRole(roles, brakes.brakeCylinderExhaustAudio, SoundKind.Ancillary);
                 SetRole(roles, brakes.airflowAudio, SoundKind.Ancillary);
             }
-            foreach (var chuffs in root.GetComponentsInChildren<ChuffClipsSimReader>(true))
+            foreach (var chuffs in hierarchy.Components.OfType<ChuffClipsSimReader>())
                 foreach (var loop in (chuffs.chuffLoops ?? new ChuffClipsSimReader.ChuffLoop[0])
                     .Concat(chuffs.waterChuffLoops ?? new ChuffClipsSimReader.ChuffLoop[0])
                     .Concat(chuffs.ashChuffLoops ?? new ChuffClipsSimReader.ChuffLoop[0]))
@@ -349,6 +387,14 @@ namespace DadsToolbox.LocoSound
             foreach (var component in root.GetComponentsInChildren<MonoBehaviour>(true))
                 if (component) foreach (var clip in ComponentClips(component)) yield return clip;
             foreach (var source in root.GetComponentsInChildren<AudioSource>(true))
+                if (source.clip) yield return source.clip;
+        }
+
+        internal static IEnumerable<AudioClip> EnumerateClips(Hierarchy hierarchy)
+        {
+            foreach (var component in hierarchy.Components)
+                foreach (var clip in ComponentClips(component)) yield return clip;
+            foreach (var source in hierarchy.Sources)
                 if (source.clip) yield return source.clip;
         }
 

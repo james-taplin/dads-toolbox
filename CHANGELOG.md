@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-rc.1 — 29 October 2026
+
+- Sign clearance now distinguishes nearby tracks from separate levels at bridges and underpasses.
+- Reduced repeated work during locomotive sound discovery and control input handling.
+- Cleaned up sound diagnostics when vehicles despawn.
+
 ## [0.4.5-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.5-dev) — 28 October 2026
 
 - Removed repeated compatibility scans from Sound Pitch and CCL Control Fix during normal gameplay, addressing recurring Update hitches.

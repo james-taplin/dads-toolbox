@@ -25,6 +25,15 @@ public static class NativeSoundChecks
     static readonly StringBuilder report = new StringBuilder();
     static int checks, failures;
     static int ticks, pending;
+    static bool countMetadata;
+    static int patchSnapshots, patchReads;
+    static int signatures;
+    static bool countSignatures;
+    static void CountSignature() { if (countSignatures) signatures++; }
+    static void CountPatchSnapshot() { if(countMetadata)patchSnapshots++; }
+    static void CountPatchRead() { if(countMetadata)patchReads++; }
+    static void MetadataStart() { patchSnapshots=patchReads=0;countMetadata=true; }
+    static int MetadataStop() { countMetadata=false;return patchSnapshots+patchReads; }
     static string output;
     static readonly List<object> foreign = new List<object>();
 
@@ -136,6 +145,230 @@ public static class NativeSoundChecks
     static void Refresh() => Call(engineType, "Refresh", new object[] { null });
     static void Discover(AudioFixture f) => Call(T("DadsToolbox.LocoSound.DirectAudio"), "Discover", f.engine, f.catalogue, new[] { f.car.gameObject });
 
+    static void DiscoveryCostChecks(AudioFixture f)
+    {
+        var roots = (IDictionary)Get(engineType, "Roots");
+        var bindings = (IDictionary)Get(engineType, "Layers");
+        var node = new GameObject("Many-layer discovery fixture"); node.transform.SetParent(f.car.transform, false);
+        var audio = node.AddComponent(T("LayeredAudio"));
+        var layerType = T("LayeredAudio+Layer");
+        var layers = Array.CreateInstance(layerType, 64);
+        for (int i = 0; i < layers.Length; i++)
+        {
+            var source = node.AddComponent<AudioSource>(); source.playOnAwake = false; source.clip = f.clip;
+            var layer = New(layerType); Set(layer, "source", source); Set(layer, "startPitch", 1f);
+            Set(layer, "clips", new[] { f.clip }); layers.SetValue(layer, i);
+        }
+        Set(audio, "layers", layers);
+        // GetComponentInParent on Unity 2019 does not discover an inactive
+        // hierarchy here. Only the isolated audio node becomes active; the
+        // TrainCar stays inactive and no clips are played.
+        node.transform.SetParent(null, false);
+        var counter = Prefix("dads-toolbox-fixture.sound-signatures", T("DadsToolbox.LocoSound.StockAudio").GetMethod("Signature", BF), "CountSignature");
+        roots[node.transform] = f.engine;
+        try
+        {
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            signatures = 0; countSignatures = true;
+            int discovered = 0;
+            foreach (var layer in layers)
+            {
+                var args = new object[] { layer, null };
+                if ((bool)Call(engineType, "TryBinding", args) && args[1] != null && bindings.Contains(layer)) discovered++;
+            }
+            countSignatures = false; timer.Stop();
+            report.AppendLine("MEASURE lazy discovery of 64 layers: bindings=" + discovered + "; signatures=" + signatures + "; ms=" + timer.Elapsed.TotalMilliseconds.ToString("F2"));
+            Check(discovered == 64, "all 64 native layers actually enter discovery and receive ownership bindings");
+            Check(signatures == 1, "64 layers of one audio module generate its full authored signature once rather than once per layer");
+
+            // A replacement engine/discovery lifetime must inspect changed authored metadata.
+            foreach (var layer in layers) bindings.Remove(layer);
+            Set(layers.GetValue(0), "clips", new[] { f.custom });
+            audio.name = "CabFan";
+            var replacement = New(engineType.GetNestedType("Engine", BF)); Set(replacement, "Car", f.car);
+            roots[node.transform] = replacement;
+            signatures = 0; countSignatures = true;
+            foreach (var layer in layers) { var args = new object[] { layer, null }; Call(engineType, "TryBinding", args); }
+            countSignatures = false;
+            Check(signatures == 1 && layers.Cast<object>().All(layer => Get(bindings[layer], "Kind").ToString() == "CabEquipment"),
+                "new discovery after clip and cab-metadata changes rebuilds signatures and reclassifies bindings");
+
+            var hierarchyType = T("DadsToolbox.LocoSound.StockAudio").GetNestedType("Hierarchy", BF);
+            if (hierarchyType == null) Check(false, "shared discovery hierarchy avoids overlapping root traversals");
+            else
+            {
+                var child = new GameObject("Overlapping inventory root"); child.transform.SetParent(node.transform, false);
+                var hierarchy = Activator.CreateInstance(hierarchyType, BF, null, new object[] { new[] { node, child, child } }, null);
+                var readRoots = (Array)Get(hierarchy, "Roots");
+                var sources = ((IEnumerable)Get(hierarchy, "Sources")).Cast<AudioSource>().ToArray();
+                Check(readRoots.Length == 1 && sources.Length == sources.Distinct().Count() && sources.Length >= 64,
+                    "shared discovery inventory visits overlapping roots once and retains each real AudioSource once");
+            }
+        }
+        finally
+        {
+            countSignatures = false; Unpatch(counter, "dads-toolbox-fixture.sound-signatures");
+            foreach (var layer in layers) { bindings.Remove(layer); ((IList)Get(f.engine, "LayerKeys")).Remove(layer); }
+            ((IList)Get(f.engine, "Nodes")).Remove(audio); Call(Get(engineType, "Layered"), "Remove", audio);
+            var modules = f.engine.GetType().GetField("Modules", BF); if (modules != null) ((IDictionary)modules.GetValue(f.engine)).Remove(audio);
+            roots.Remove(node.transform); Object.DestroyImmediate(node);
+        }
+
+        var logOnce = engineType.GetMethod("LogOnce", BF);
+        if (logOnce == null) Check(false, "unique discovery errors keep a bounded diagnostic deduplication history");
+        else
+        {
+            for (int i = 0; i < 512; i++) logOnce.Invoke(null, new object[] { "controlled unique discovery error " + i });
+            var history = Get(engineType, "Logged");
+            Check((int)history.GetType().GetProperty("Count").GetValue(history, null) <= 256 && !(bool)logOnce.Invoke(null, new object[] { "controlled unique discovery error 511" }),
+                "unique discovery errors keep a bounded history while the latest repeated error stays suppressed");
+        }
+        var describedField = engineType.GetField("DescribedCars", BF);
+        if (describedField == null) Check(false, "spawn and despawn release per-car diagnostic deduplication entries");
+        else
+        {
+            var described = (IDictionary)describedField.GetValue(null); int before = described.Count;
+            for (int i = 0; i < 16; i++)
+            {
+                var go = new GameObject("Diagnostic ownership fixture"); go.SetActive(false);
+                var car = go.AddComponent(T("TrainCar"));
+                // TrainAudio is abstract; use the game's concrete implementation
+                // without initializing it or entering the live audio manager.
+                var trainAudio = go.AddComponent(T("DV.ModularAudioCar.CarModularAudio"));
+                if (!trainAudio)
+                {
+                    Object.DestroyImmediate(go);
+                    Check(false, "native CarModularAudio component must exist before exercising despawn ownership");
+                    return;
+                }
+                var engine = New(engineType.GetNestedType("Engine", BF)); Set(engine, "Car", car); Set(engine, "Audio", trainAudio);
+                ((IDictionary)Get(engineType, "ByAudio"))[trainAudio] = engine;
+                ((IList)Get(engineType, "Engines")).Add(engine); described[car] = "controlled description";
+                Call(engineType, "DetachCar", trainAudio, true); Object.DestroyImmediate(go);
+            }
+            Check(described.Count == before, "sixteen spawn/despawn lifetimes leave no retained per-car diagnostic entries");
+        }
+    }
+
+    static void DopplerPitchChecks(AudioFixture f)
+    {
+        // Exercise the real native request/apply methods without booting ECS or
+        // audio playback. The inactive object does not run Doppler.Awake.
+        var doppler = f.source.gameObject.AddComponent(T("DV.DopplerEffects.Doppler"));
+        if (!doppler) throw new InvalidOperationException("Native Doppler fixture component was not created.");
+        Set(doppler, "source", f.source); Set(f.layer, "doppler", doppler); Set(f.layer, "useDoppler", true);
+        float factor = (float)Math.Pow(2, -.2);
+        try
+        {
+            f.source.pitch = .83f; Pitch(f);
+            float requested = (float)Get(doppler, "desiredPitch");
+            Check(Near(requested, f.baseline * factor) && Near(f.source.pitch, .83f),
+                "native Doppler receives scaled desired pitch before the AudioSource is updated");
+            Call(doppler, "ApplyPitch", requested);
+            Check(Near(f.source.pitch, f.baseline * factor) && Near((float)Get(f.layer, "startPitch"), 1.2f),
+                "native Doppler ApplyPitch writes the scaled request while authored startPitch remains unchanged");
+            Set(f.layer, "usePitchCurve", true);
+            Set(f.layer, "pitchCurve", AnimationCurve.Linear(0, .5f, 1, 1.5f));
+            f.setPitch.Invoke(f.layer, new object[] { .75f, false, .5f, 1.5f });
+            requested = (float)Get(doppler, "desiredPitch"); Call(doppler, "ApplyPitch", requested);
+            Check(Near(requested, 1.2f * 1.25f * factor) && Near(f.source.pitch, requested),
+                "native curve-driven Doppler pitch preserves the curve and applies the configured multiplier");
+            Check((bool)Call(module, "Stop") && Near((float)Get(doppler, "desiredPitch"), 1.2f * 1.25f),
+                "disabling sound restores the native curve-driven Doppler request");
+            Call(doppler, "ApplyPitch", (float)Get(doppler, "desiredPitch"));
+            Check(Near(f.source.pitch, 1.2f * 1.25f), "native Doppler apply restores actual source pitch after disabling sound");
+            Call(module, "Configure", true, true);
+        }
+        finally
+        {
+            Set(f.layer, "usePitchCurve", false); Set(f.layer, "useDoppler", false); Set(f.layer, "doppler", null);
+            Object.DestroyImmediate(doppler); Pitch(f);
+        }
+    }
+
+    static void DirectionalPitchChecks(AudioFixture f)
+    {
+        var donor=((IList)Get(f.catalogue,"Donors")).Cast<object>().Single(d=>(int)Get(d,"Mask")==1);
+        var clipInfo=((IDictionary)Get(f.catalogue,"Clips"))[f.clip];
+        var chuffs=Enum.Parse(T("DadsToolbox.LocoSound.SoundKind"),"Chuffs");
+        var maximum=options.GetType().GetField("MaximumPitch",BF);
+        Action<double,double,float> steam=(area,baseline,strength)=>{
+            Set(f.engine,"Steam",true); Set(f.engine,"Area",area); Set(donor,"Area",baseline);
+            Set(f.catalogue,"Area060",18.06d); Set(f.catalogue,"Area282",47d);
+            Set(options,"Strength",strength); Set(f.binding,"Kind",chuffs); Set(clipInfo,"Kind",chuffs);
+            ((IDictionary)Get(f.engine,"ResolvedDonors")).Clear();
+        };
+        try
+        {
+            steam(44.50,47,6.4955945f);
+            float c48=(float)Math.Pow(44.50/47,-.2*6.4955945f);
+            long writes=(long)Get(f.binding,"ShiftWrites"); Pitch(f);
+            Check(f.source.pitch>f.baseline && Near(f.source.pitch,f.baseline*c48) && (long)Get(f.binding,"ShiftWrites")==writes+1,
+                "C48A-sized boiler using S282 audio changes actual AudioSource pitch upward and records a write");
+            int firstAppliedLog=report.ToString().Split(new[]{"Applied pitch:"},StringSplitOptions.None).Length;
+            Check(firstAppliedLog>1,"completed native pitch write produces an applied-pitch diagnostic");
+            for(int i=0;i<20;i++)Pitch(f);
+            Check(Near(f.source.pitch,f.baseline*c48) && Near((float)Get(f.layer,"startPitch"),1.2f),"repeated upward steam calls preserve native baseline without compounding");
+            Check(report.ToString().Split(new[]{"Applied pitch:"},StringSplitOptions.None).Length==firstAppliedLog,"applied-pitch diagnostic is not repeated for every audio update");
+            Set(engineType,"Context",f.engine);
+            var shot=toolbox.GetType("DadsToolbox.LocoSound.OneShotPatch",true).GetMethod("Prefix",BF);
+            var args=new object[]{f.clip,null,null,1.5f};shot.Invoke(null,args);
+            Check(Near((float)args[3],1.5f*c48),"smaller steam boiler raises native one-shot pitch before scheduling");
+            steam(47,47,6.4955945f);writes=(long)Get(f.binding,"ShiftWrites");Pitch(f);
+            Check(Near(f.source.pitch,f.baseline) && (long)Get(f.binding,"ShiftWrites")==writes,"L74-sized boiler using S282 audio stays neutral with no pitch write");
+            steam(94,47,1);Pitch(f);
+            Check(f.source.pitch<f.baseline && Near(f.source.pitch,f.baseline*(float)Math.Pow(2,-.2)),"larger boiler lowers actual native steam layer pitch");
+            steam(18.06,47,1);Pitch(f);
+            Check(f.source.pitch>f.baseline,"matching S060 boiler size does not suppress an S282-donor upward adjustment");
+            steam(47,18.06,1);Pitch(f);
+            Check(f.source.pitch<f.baseline,"matching S282 boiler size does not suppress an S060-donor downward adjustment");
+            Check(maximum!=null,"steam upper pitch cap is independently configurable");
+            if(maximum!=null)
+            {
+                maximum.SetValue(options,1.1f);steam(5,47,10);Pitch(f);
+                Check(Near(f.source.pitch,f.baseline*1.1f),"steam upper cap limits actual upward pitch writes");
+                Set(options,"MinimumPitch",.8f);steam(470,47,10);Pitch(f);
+                Check(Near(f.source.pitch,f.baseline*.8f),"steam lower cap limits actual downward pitch writes");
+                Set(options,"MinimumPitch",.25f);maximum.SetValue(options,2f);
+                steam(44.50,47,0);Pitch(f);
+                Check(Near(f.source.pitch,f.baseline),"zero-percent steam strength restores native pitch");
+                steam(44.50,47,1);Pitch(f);float normal=f.source.pitch;
+                Set(options,"Strength",.5f);Refresh();
+                Check(f.source.pitch>f.baseline && f.source.pitch<normal,"steam strength edits refresh captured input at the reduced percentage");
+                steam(44.50,47,1);Pitch(f);Discover(f);
+                Check(f.direct.pitch>1.1f,"smaller boiler also raises owned direct AudioSource pitch");
+                Set(options,"Strength",0f);Refresh();
+                Check(Near(f.source.pitch,f.baseline) && Near(f.direct.pitch,1.1f),"zero steam strength restores both layered and direct sources");
+                steam(47,47,1);Set(f.engine,"Stock",true);Pitch(f);
+                Check(Near(f.source.pitch,f.baseline),"real vanilla identity remains protected with bidirectional steam scaling");
+                Set(f.engine,"Stock",false);
+                steam(44.50,47,1);f.source.clip=f.custom;Pitch(f);
+                Check(Near(f.source.pitch,f.baseline),"custom replacement stays excluded from upward steam scaling");
+                f.source.clip=f.clip;Set(f.binding,"Kind",Enum.Parse(T("DadsToolbox.LocoSound.SoundKind"),"CabEquipment"));Pitch(f);
+                Check(Near(f.source.pitch,f.baseline),"cab-equipment exclusion also prevents upward steam writes");
+            }
+            Set(f.binding,"Kind",chuffs);
+            Set(f.engine,"Steam",false);Set(f.engine,"Mass",50d);Set(donor,"Area",0d);
+            Set(options,"NonSteamStrength",1f);Set(options,"NonSteamMaximumPitch",1.1f);Pitch(f);
+            Check(Near(f.source.pitch,f.baseline*1.1f),"lighter diesel receives actual upward pitch bounded by its upper cap");
+            Set(f.engine,"Mass",200d);Set(options,"NonSteamMinimumPitch",.9f);Pitch(f);
+            Check(Near(f.source.pitch,f.baseline*.9f),"heavier diesel receives actual downward pitch bounded by its lower cap");
+            Set(f.engine,"Mass",100d);Pitch(f);
+            Check(Near(f.source.pitch,f.baseline),"diesel matching its actual sound donor mass remains neutral");
+            Set(f.engine,"Mass",50d);Set(options,"NonSteamMaximumPitch",2f);Set(options,"NonSteamStrength",0f);Pitch(f);
+            Check(Near(f.source.pitch,f.baseline),"zero-percent diesel strength restores actual native pitch");
+        }
+        finally
+        {
+            Set(engineType,"Context",null);Set(f.engine,"Steam",false);Set(f.engine,"Mass",200d);Set(f.engine,"Stock",false);
+            Set(donor,"Area",0d);Set(options,"Strength",1f);Set(options,"MinimumPitch",.25f);if(maximum!=null)maximum.SetValue(options,2f);
+            Set(options,"NonSteamStrength",1f);Set(options,"NonSteamMinimumPitch",.25f);Set(options,"NonSteamMaximumPitch",2f);
+            Set(f.binding,"Kind",Enum.Parse(T("DadsToolbox.LocoSound.SoundKind"),"Unknown"));Set(clipInfo,"Kind",Enum.Parse(T("DadsToolbox.LocoSound.SoundKind"),"Unknown"));
+            f.source.clip=f.clip;((IDictionary)Get(f.engine,"ResolvedDonors")).Clear();Refresh();
+            Call(T("DadsToolbox.LocoSound.DirectAudio"),"Clear",true);
+        }
+    }
+
     public static void Run() { EditorApplication.update += Start; }
     static void Start()
     {
@@ -178,10 +411,36 @@ public static class NativeSoundChecks
             Check((bool)Call(duplicate, "Unload") && OwnedMethods(Owner).Length == 20, "unloading rejected duplicate preserves first owner");
             var clock = Prefix("dads-toolbox-fixture.sound-clock", engineType.GetMethod("Tick", BF), "ClockTick");
             Prefix("dads-toolbox-fixture.sound-clock", engineType.GetMethod("ProcessPending", BF), "ClockPending");
+            var processor=harmony.GetType("HarmonyLib.PatchProcessor",true);
+            var metadataCounter=Prefix("dads-toolbox-fixture.sound-metadata",processor.GetMethod("GetAllPatchedMethods",BF),"CountPatchSnapshot");
+            Prefix("dads-toolbox-fixture.sound-metadata",processor.GetMethod("GetPatchInfo",BF),"CountPatchRead");
+            MetadataStart();
             foreach (float now in new[] { 0f, .05f, .1f, .24f, .25f, .3f, .5f }) Call(module, "Tick", now);
+            int stableReads=MetadataStop();
             Check(ticks == 3 && pending == 7, "parent frame dispatcher keeps quarterly discovery cadence and one pending dispatch per update");
+            Check(stableReads==0,"stable active sound ticks perform zero Harmony registry snapshots or patch-info reads");
+            MetadataStart();Call(module,"Refresh");int refreshReads=MetadataStop();
+            Check(Active(module) && refreshReads>0,"explicit refresh still fully reconciles residual Harmony ownership");
+            conflict="CCL is temporarily unavailable";
+            MetadataStart();Call(module,"Tick",1f);int lostReads=MetadataStop();
+            Check(!Active(module) && lostReads>0,"cheap dependency loss stops sound and verifies patch cleanup");
+            MetadataStart();foreach(float now in new[]{1.25f,1.5f,1.75f})Call(module,"Tick",now);int blockedReads=MetadataStop();
+            Check(blockedReads==0,"unchanged waiting state does not repeatedly sweep retained ownership or cleanup metadata");
+            conflict=null;MetadataStart();Call(module,"Tick",2f);int readyReads=MetadataStop();
+            Check(Active(module) && readyReads>0,"late dependency readiness revalidates ownership and activates sound");
+            var lateStandalone=ForeignPatch("SteamSizePitch",T("LayeredAudio+Layer").GetMethod("SetPitch",BF));
+            MetadataStart();Call(module,"Refresh");int residualReads=MetadataStop();
+            Check(!Active(module) && residualReads>0 && OwnedMethods("SteamSizePitch").Length==1,"retry detects silent residual standalone patches while preserving the foreign owner");
+            MetadataStart();foreach(float now in new[]{3f,3.25f,3.5f})Call(module,"Tick",now);int residualWaitReads=MetadataStop();
+            Check(residualWaitReads==0,"residual-owner blocked sound performs no global scan on stable polling ticks");
+            Unpatch(lateStandalone,"SteamSizePitch");Call(module,"Refresh");
+            Check(Active(module),"explicit retry after residual removal restores normal sound updates");
+            Unpatch(metadataCounter,"dads-toolbox-fixture.sound-metadata");
             Unpatch(clock, "dads-toolbox-fixture.sound-clock");
             var f = CreateAudio();
+            DiscoveryCostChecks(f);
+            DopplerPitchChecks(f);
+            DirectionalPitchChecks(f);
             float factor = (float)Math.Pow(2, -.2);
             Set(engineType, "Context", f.engine);
             var oneShot = toolbox.GetType("DadsToolbox.LocoSound.OneShotPatch", true).GetMethod("Prefix", BF);
@@ -266,7 +525,8 @@ public static class NativeSoundChecks
         finally
         {
             try { if (module != null) Call(module, "Unload"); } catch (Exception ex) { report.AppendLine("CLEANUP " + ex); failures++; }
-            foreach (var id in new[] { Owner, Other, "SteamSizePitch", "dads-toolbox-fixture.sound-clock", "dads-toolbox-fixture.sound-throw" })
+            countMetadata=false;
+            foreach (var id in new[] { Owner, Other, "SteamSizePitch", "dads-toolbox-fixture.sound-clock", "dads-toolbox-fixture.sound-throw", "dads-toolbox-fixture.sound-metadata", "dads-toolbox-fixture.sound-signatures" })
                 try { if (harmony != null) Unpatch(Activator.CreateInstance(harmony.GetType("HarmonyLib.Harmony"), id), id); } catch { }
             foreach (var obj in objects.AsEnumerable().Reverse()) if (obj) Object.DestroyImmediate(obj);
             report.AppendLine("Checks: " + checks + "; failures: " + failures);

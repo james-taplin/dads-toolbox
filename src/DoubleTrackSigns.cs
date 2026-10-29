@@ -158,6 +158,10 @@ namespace DadsToolbox
     {
         private const float GridCellSize = 10.0f;
         private const float DistanceTolerance = 0.005f;
+        // DoubleTrack places the sign root at rail-curve height before its
+        // sideways offset. Keep a conservative five-metre rail-level envelope
+        // for sign/vehicle height; this separates bridges, not exact mesh bounds.
+        private const float VerticalClearance = 5.0f;
         private readonly Dictionary<long, List<int>> SegmentGrid = new Dictionary<long, List<int>>();
         private readonly List<TrackSegment> Segments = new List<TrackSegment>();
         private readonly HashSet<int> ProcessedSigns = new HashSet<int>();
@@ -287,10 +291,7 @@ namespace DadsToolbox
                 {
                     Vector3 first = (Vector3)pointSet.points[pointIndex].position;
                     Vector3 second = (Vector3)pointSet.points[pointIndex + 1].position;
-                    AddSegment(
-                        new Vector2(first.x, first.z),
-                        new Vector2(second.x, second.z),
-                        track.name);
+                    AddSegment(first, second, track.name);
                 }
             }
 
@@ -299,15 +300,17 @@ namespace DadsToolbox
             return Segments.Count > 0;
         }
 
-        private void AddSegment(Vector2 start, Vector2 end, string trackName)
+        private void AddSegment(Vector3 first, Vector3 second, string trackName)
         {
+            Vector2 start = new Vector2(first.x, first.z);
+            Vector2 end = new Vector2(second.x, second.z);
             if ((end - start).sqrMagnitude < 0.000001f)
             {
                 return;
             }
 
             int segmentIndex = Segments.Count;
-            Segments.Add(new TrackSegment(start, end, trackName));
+            Segments.Add(new TrackSegment(start, end, first.y, second.y, trackName));
 
             int minX = CellFor(Mathf.Min(start.x, end.x));
             int maxX = CellFor(Mathf.Max(start.x, end.x));
@@ -334,8 +337,7 @@ namespace DadsToolbox
         {
             Vector3 originShift = OriginShift.currentMove;
             Vector3 originalWorld = sign.transform.position;
-            Vector3 originalAbsolute3 = originalWorld - originShift;
-            Vector2 originalAbsolute = new Vector2(originalAbsolute3.x, originalAbsolute3.z);
+            Vector3 originalAbsolute = originalWorld - originShift;
 
             NearestTrackPoint initialNearest;
             float clearance = options.MinimumClearance;
@@ -357,7 +359,7 @@ namespace DadsToolbox
             float maximumMove = options.MaximumMove;
             for (float moved = step; moved <= maximumMove + DistanceTolerance; moved += step)
             {
-                Vector2 candidate = originalAbsolute + (outward * moved);
+                Vector3 candidate = originalAbsolute + new Vector3(outward.x * moved, 0.0f, outward.y * moved);
                 NearestTrackPoint candidateNearest;
                 if (TryFindNearestWithin(candidate, clearance, out candidateNearest))
                 {
@@ -386,10 +388,11 @@ namespace DadsToolbox
         }
 
         private bool TryFindNearestWithin(
-            Vector2 point,
+            Vector3 absolutePoint,
             float radius,
             out NearestTrackPoint nearest)
         {
+            Vector2 point = new Vector2(absolutePoint.x, absolutePoint.z);
             float radiusSquared = radius * radius;
             float bestSquared = radiusSquared - DistanceTolerance;
             bool found = false;
@@ -421,7 +424,12 @@ namespace DadsToolbox
                         }
 
                         TrackSegment segment = Segments[segmentIndex];
-                        Vector2 closest = ClosestPointOnSegment(point, segment.Start, segment.End);
+                        float amount;
+                        Vector2 closest = ClosestPointOnSegment(point, segment.Start, segment.End, out amount);
+                        // Use height at the same horizontal projection so a
+                        // sloping railway still has the correct local elevation.
+                        float height = Mathf.Lerp(segment.StartHeight, segment.EndHeight, amount);
+                        if (Mathf.Abs(absolutePoint.y - height) > VerticalClearance) continue;
                         float squared = (point - closest).sqrMagnitude;
                         if (squared < bestSquared)
                         {
@@ -441,16 +449,17 @@ namespace DadsToolbox
             return found;
         }
 
-        private Vector2 ClosestPointOnSegment(Vector2 point, Vector2 start, Vector2 end)
+        private Vector2 ClosestPointOnSegment(Vector2 point, Vector2 start, Vector2 end, out float amount)
         {
             Vector2 segment = end - start;
             float lengthSquared = segment.sqrMagnitude;
             if (lengthSquared < 0.000001f)
             {
+                amount = 0;
                 return start;
             }
 
-            float amount = Mathf.Clamp01(Vector2.Dot(point - start, segment) / lengthSquared);
+            amount = Mathf.Clamp01(Vector2.Dot(point - start, segment) / lengthSquared);
             return start + (segment * amount);
         }
 
@@ -487,12 +496,16 @@ namespace DadsToolbox
         {
             internal readonly Vector2 Start;
             internal readonly Vector2 End;
+            internal readonly float StartHeight;
+            internal readonly float EndHeight;
             internal readonly string TrackName;
 
-            internal TrackSegment(Vector2 start, Vector2 end, string trackName)
+            internal TrackSegment(Vector2 start, Vector2 end, float startHeight, float endHeight, string trackName)
             {
                 Start = start;
                 End = end;
+                StartHeight = startHeight;
+                EndHeight = endHeight;
                 TrackName = trackName;
             }
         }

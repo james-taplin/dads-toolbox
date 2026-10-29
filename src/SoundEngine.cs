@@ -35,6 +35,9 @@ namespace DadsToolbox.LocoSound
         private static readonly List<Engine> Engines = new List<Engine>();
         private static readonly HashSet<LayeredAudio> Layered = new HashSet<LayeredAudio>();
         private static readonly HashSet<string> Logged = new HashSet<string>();
+        private static readonly Queue<string> LoggedOrder = new Queue<string>();
+        private static readonly Dictionary<TrainCar, string> DescribedCars = new Dictionary<TrainCar, string>();
+        private static readonly List<TrainCar> StaleDescriptions = new List<TrainCar>();
         private static bool referencesReady;
         private static bool dirty = true;
         private static float nextReferenceRetry;
@@ -58,7 +61,7 @@ namespace DadsToolbox.LocoSound
         {
             Enabled = false;
             Clear();
-            Catalogue.Clear(); Logged.Clear(); referencesReady = false;
+            Catalogue.Clear(); Logged.Clear(); LoggedOrder.Clear(); referencesReady = false;
             Config = options;
             Logger = logger;
             DiagnosticsDirectory = diagnosticsDirectory;
@@ -69,7 +72,7 @@ namespace DadsToolbox.LocoSound
         }
         internal static void Release()
         {
-            Clear(); Catalogue.Clear(); Logged.Clear(); referencesReady = false;
+            Clear(); Catalogue.Clear(); Logged.Clear(); LoggedOrder.Clear(); referencesReady = false;
             ContextKind = SoundKind.Unknown; Restoring = false;
             Config = null; Logger = null; DiagnosticsDirectory = null;
         }
@@ -185,7 +188,7 @@ namespace DadsToolbox.LocoSound
             catch (Exception ex)
             {
                 status = "Scan failed; see UMM log: " + ex.Message;
-                if (Logged.Add(ex.ToString())) Log(ex.ToString());
+                if (LogOnce(ex.ToString())) Log(ex.ToString());
             }
         }
         internal static void RequestScan() => dirty = true;
@@ -200,6 +203,15 @@ namespace DadsToolbox.LocoSound
             ManualRefresh = false; nextTrace = 0; traceStarted = false;
             dirty = true; nextReferenceRetry = 0; nextCleanup = 0;
             StaleLayers.Clear(); StaleCallers.Clear(); StaleEngines.Clear();
+            DescribedCars.Clear(); StaleDescriptions.Clear();
+        }
+
+        private static bool LogOnce(string value)
+        {
+            if (!Logged.Add(value)) return false;
+            LoggedOrder.Enqueue(value);
+            if (LoggedOrder.Count > 256) Logged.Remove(LoggedOrder.Dequeue());
+            return true;
         }
 
         private static void Scan()
@@ -226,22 +238,21 @@ namespace DadsToolbox.LocoSound
             var car = CarField.GetValue(audio) as TrainCar;
             if (!car || !car.gameObject.scene.IsValid() || !car.carLivery || !car.carLivery.parentType || !IsLocomotive(car)) return null;
             var engine = RegisterEngine(audio, car);
-            var roots = AudioRoots(car, audio).ToArray();
+            var hierarchy = new StockAudio.Hierarchy(AudioRoots(car, audio));
             // Count exact stock clip matches. Custom clips never become stock just because of their names.
-            var observed = roots.SelectMany(StockAudio.EnumerateClips).Distinct().Where(c => c).ToArray();
+            var observed = StockAudio.EnumerateClips(hierarchy).Distinct().Where(c => c).ToArray();
             foreach (var clip in observed)
             {
                 if (Clips.TryGetValue(clip, out var info)) engine.StockClips++;
             }
-            var roles = new Dictionary<LayeredAudio, SoundKind>();
-            foreach (var root in roots)
-                foreach (var role in ExplicitRoles(root)) SetRole(roles, role.Key, role.Value);
-            foreach (var layered in roots.SelectMany(root => root.GetComponentsInChildren<LayeredAudio>(true)).Distinct())
+            var roles = ExplicitRoles(hierarchy);
+            foreach (var layered in hierarchy.Layered)
             {
                 Layered.Add(layered);
                 engine.Nodes.Add(layered);
-                SoundKind kind = Catalogue.IsCab(layered) ? SoundKind.CabEquipment : roles.TryGetValue(layered, out var explicitKind) ? explicitKind : KindOf(layered.transform, car.transform);
-                int moduleDonors = Catalogue.MatchModule(layered);
+                var metadata = ModuleMetadata(engine, layered);
+                SoundKind kind = metadata.Cabin ? SoundKind.CabEquipment : roles.TryGetValue(layered, out var explicitKind) ? explicitKind : KindOf(layered.transform, car.transform);
+                int moduleDonors = metadata.Donors;
                 if (kind == SoundKind.Propulsion || SteamKind(kind))
                 {
                     Vote(engine, moduleDonors, 4);
@@ -259,10 +270,11 @@ namespace DadsToolbox.LocoSound
                       binding.AppliedMultiplier = previous.AppliedMultiplier; binding.ShiftWrites = previous.ShiftWrites; binding.RefreshWrites = previous.RefreshWrites; }
                 }
             }
-            if (!engine.Stock) DirectAudio.Discover(engine, Catalogue, roots);
-            string key = car.GetInstanceID() + ":" + engine.StockClips + ":" + engine.Area + ":" + engine.Mass;
-            if (Logged.Add(key))
+            if (!engine.Stock) DirectAudio.DiscoverHierarchy(engine, Catalogue, hierarchy);
+            string key = engine.StockClips + ":" + engine.Area + ":" + engine.Mass;
+            if (!DescribedCars.TryGetValue(car, out var described) || described != key)
             {
+                DescribedCars[car] = key;
                 Log(Describe(engine));
                 foreach (var pair in Layers.Where(p => p.Value.Engine == engine && DynamoBinding(p.Value)))
                     Log($"Dynamo audio: {car.carLivery.id}; clip={pair.Value.Clip?.name}; stockClip={pair.Value.Donors != 0}; category={pair.Value.Kind}; pitch={pair.Key.source.pitch:F3}; volume={pair.Key.source.volume:F3}; patch writes={pair.Value.ShiftWrites}.");
@@ -334,12 +346,21 @@ namespace DadsToolbox.LocoSound
             if (engine == null || engine.Stock) return false;
             var audio = layer.source.GetComponentInParent<LayeredAudio>();
             if (!audio || !(audio.layers ?? new LayeredAudio.Layer[0]).Contains(layer)) return false;
-            var kind = Catalogue.IsCab(audio) ? SoundKind.CabEquipment : KindOf(audio.transform, engine.Car.transform);
-            foreach (var port in audio.GetComponents<LayeredAudioPortReader>())
-                if (PitchRules.Classify(port.portId) == SoundKind.CabEquipment) kind = SoundKind.CabEquipment;
-            binding = BindLayer(engine, audio, layer, kind, Catalogue.MatchModule(audio), kind == SoundKind.Chuffs);
+            var metadata = ModuleMetadata(engine, audio);
+            var kind = metadata.Cabin ? SoundKind.CabEquipment : KindOf(audio.transform, engine.Car.transform);
+            binding = BindLayer(engine, audio, layer, kind, metadata.Donors, kind == SoundKind.Chuffs);
             if (!engine.Nodes.Contains(audio)) { engine.Nodes.Add(audio); Layered.Add(audio); }
             return true;
+        }
+
+        private static StockAudio.ModuleInfo ModuleMetadata(Engine engine, LayeredAudio audio)
+        {
+            // Setup binds many layers of the same module. Signature generation
+            // includes every layer and curve, so do it once for that module.
+            // A new discovery/setup creates a new Engine and fresh metadata.
+            if (!engine.Modules.TryGetValue(audio, out var metadata))
+                engine.Modules[audio] = metadata = Catalogue.AnalyzeModule(audio);
+            return metadata;
         }
 
         private static bool LoadReferences()
@@ -355,24 +376,22 @@ namespace DadsToolbox.LocoSound
             Catalogue.AddSharedReferences();
         }
 
-        private static Dictionary<LayeredAudio, SoundKind> ExplicitRoles(GameObject root)
+        private static Dictionary<LayeredAudio, SoundKind> ExplicitRoles(StockAudio.Hierarchy hierarchy)
         {
             var result = new Dictionary<LayeredAudio, SoundKind>();
-            foreach (var audio in root.GetComponentsInChildren<LayeredAudio>(true))
-                if (Catalogue.IsCab(audio)) SetRole(result, audio, SoundKind.CabEquipment);
             // Port identity remains reliable even when a mod renames the sound hierarchy.
-            foreach (var port in root.GetComponentsInChildren<LayeredAudioPortReader>(true))
+            foreach (var port in hierarchy.Components.OfType<LayeredAudioPortReader>())
             {
                 var kind = PitchRules.Classify(port.portId);
                 if (kind != SoundKind.Unknown) SetRole(result, port.GetComponent<LayeredAudio>(), kind);
             }
-            foreach (var b in root.GetComponentsInChildren<BrakesAudioModule>(true))
+            foreach (var b in hierarchy.Components.OfType<BrakesAudioModule>())
             {
                 SetRole(result, b.brakeAudio, SoundKind.Brakes); SetRole(result, b.brakeSquealAudio, SoundKind.Brakes);
                 SetRole(result, b.wheelSlidingAudio, SoundKind.Brakes); SetRole(result, b.brakesOverheatingAudio, SoundKind.Brakes);
                 SetRole(result, b.brakeCylinderExhaustAudio, SoundKind.Ancillary); SetRole(result, b.airflowAudio, SoundKind.Ancillary);
             }
-            foreach (var c in root.GetComponentsInChildren<ChuffClipsSimReader>(true))
+            foreach (var c in hierarchy.Components.OfType<ChuffClipsSimReader>())
                 foreach (var loop in (c.chuffLoops ?? new ChuffClipsSimReader.ChuffLoop[0]).Concat(c.waterChuffLoops ?? new ChuffClipsSimReader.ChuffLoop[0]).Concat(c.ashChuffLoops ?? new ChuffClipsSimReader.ChuffLoop[0]))
                     if (loop != null) SetRole(result, loop.chuffLoop, SoundKind.Chuffs);
             return result;
@@ -511,7 +530,7 @@ namespace DadsToolbox.LocoSound
                 catch (Exception ex)
                 {
                     // One bad car must not stop discovery for the others: skip it, say so once, carry on.
-                    if (Logged.Add(ex.ToString())) Log("Single-car discovery failed; this car is skipped: " + ex);
+                    if (LogOnce(ex.ToString())) Log("Single-car discovery failed; this car is skipped: " + ex);
                 }
                 break;
             }
@@ -552,6 +571,7 @@ namespace DadsToolbox.LocoSound
             foreach (var key in Roots.Where(kv => kv.Value == engine).Select(kv => kv.Key).ToList()) Roots.Remove(key);
             Engines.Remove(engine);
             ByAudio.Remove(audio);
+            if (endOwnership && !ReferenceEquals(engine.Car, null)) DescribedCars.Remove(engine.Car);
             return saved;
         }
 
@@ -568,6 +588,7 @@ namespace DadsToolbox.LocoSound
                 {
                     Layered.Remove(binding.Audio); binding.Engine.Nodes.Remove(binding.Audio);
                     binding.Engine.Callers.Remove(binding.Audio);
+                    binding.Engine.Modules.Remove(binding.Audio);
                 }
             }
             StaleLayers.Clear(); StaleEngines.Clear();
@@ -579,6 +600,10 @@ namespace DadsToolbox.LocoSound
                 if (!engine.Car || !engine.Audio) StaleEngines.Add(engine);
             }
             foreach (var engine in StaleEngines) DetachCar(engine.Audio);
+            StaleDescriptions.Clear();
+            foreach (var car in DescribedCars.Keys) if (!car) StaleDescriptions.Add(car);
+            foreach (var car in StaleDescriptions) DescribedCars.Remove(car);
+            StaleDescriptions.Clear();
             StaleCallers.Clear(); StaleEngines.Clear();
             DirectAudio.Prune();
         }
@@ -632,6 +657,7 @@ namespace DadsToolbox.LocoSound
             public readonly Dictionary<int, int> Votes = new Dictionary<int, int>();
             public readonly Dictionary<long, StockAudio.Donor> ResolvedDonors = new Dictionary<long, StockAudio.Donor>();
             public readonly Dictionary<Component, ContextMetadata> Callers = new Dictionary<Component, ContextMetadata>();
+            public readonly Dictionary<LayeredAudio, StockAudio.ModuleInfo> Modules = new Dictionary<LayeredAudio, StockAudio.ModuleInfo>();
             public readonly List<LayeredAudio> Nodes = new List<LayeredAudio>();
             public readonly List<LayeredAudio.Layer> LayerKeys = new List<LayeredAudio.Layer>();
         }
@@ -647,7 +673,8 @@ namespace DadsToolbox.LocoSound
             if (!Enabled || Restoring || !Layers.TryGetValue(layer, out var b) ||
                 b.Engine.PitchLogged || b.AppliedMultiplier == 1 || !layer.source) return;
             b.Engine.PitchLogged = true;
-            Log($"Applied pitch: {b.Engine.Car?.carLivery?.id}; clip={layer.source.clip?.name}; multiplier={b.AppliedMultiplier:F4}x; AudioSource pitch={layer.source.pitch:F4}.");
+            float requested = layer.useDoppler && layer.doppler ? layer.doppler.desiredPitch : layer.source.pitch;
+            Log($"Applied pitch: {b.Engine.Car?.carLivery?.id}; clip={layer.source.clip?.name}; multiplier={b.AppliedMultiplier:F4}x; requested pitch={requested:F4}; AudioSource snapshot={layer.source.pitch:F4}; path={(layer.useDoppler ? "Doppler" : "direct")}.");
         }
         private static bool CanTouchLayer(LayeredAudio.Layer layer, Binding binding)
         {
@@ -714,8 +741,9 @@ namespace DadsToolbox.LocoSound
                 metadata.Kind = component is ChuffClipsSimReader ? SoundKind.Chuffs : KindOf(component.transform, Context.Car.transform);
                 if (component is LayeredAudio audio)
                 {
-                    if (Catalogue.IsCab(audio)) metadata.Kind = SoundKind.CabEquipment;
-                    metadata.Donors = Catalogue.MatchModule(audio);
+                    var module = ModuleMetadata(Context, audio);
+                    if (module.Cabin) metadata.Kind = SoundKind.CabEquipment;
+                    metadata.Donors = module.Donors;
                 }
                 else if (component is AudioClipPortReader reader)
                 {
