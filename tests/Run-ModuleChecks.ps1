@@ -47,8 +47,6 @@ $taskInputs=@($taskSources)+@($PSCommandPath)+@($taskRefs)
 Add-Content -LiteralPath $taskLog -Value "RESULT: $taskPassed passed, $taskFailed failed." -Encoding utf8
 if($Kind -eq 'hud'){
     $taskInputs+=Join-Path $taskOutput 'cold.txt'
-    $taskLegacyRoot=if($env:TOOLBOX_LEGACY_MODS){$env:TOOLBOX_LEGACY_MODS}else{Join-Path $GamePath 'Mods'}
-    $taskInputs+=Join-Path $taskLegacyRoot 'DV_RSCompatibility\DVRollingStockCompatibility.dll'
 }
 [ordered]@{
     toolbox=Get-FileHash -LiteralPath $ToolboxDll | Select-Object Path,Hash

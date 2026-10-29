@@ -1,6 +1,6 @@
 # Dad's Toolbox user guide
 
-Version 1.0.0-rc.2 is a release candidate for testing before the stable release.
+Version 1.0.0-rc.3 is a release candidate for testing before the stable release.
 
 Each fix has its own switch in Unity Mod Manager. Its status tells you whether it is active, waiting for a dependency or blocked by another mod. Your choices stay saved even when a dependency is missing.
 
@@ -24,23 +24,11 @@ Embedded-skin registration has been checked with CCL 3.1.11. Newer CCL versions 
 - **Bogie Visual Smoothing:** uses visual copies while native physics, steering and animation remain authoritative. **Refresh mapped bogie visuals** remaps loaded vehicles; **Write bogie coverage report** writes a manual snapshot. Maintenance timing is shown in its status and covers maintenance work, not total feature cost.
 - **Retry optional features:** retry a fix after resolving a dependency or reported error.
 
-## Switching from standalone fixes
-
-Disable the matching standalone fixes before starting the game: CCLSmokeFix, DVCCLControlFix, SteamSizePitch, DoubleTrackSignClearance and Rolling Stock Compatibility (DVRollingStockCompatibility). Keep their underlying mods and your locomotive packs installed. Restart the game after making this change.
-
-For SteamSizePitch, back up its Settings.xml and leave the disabled mod's folder in place for the first Toolbox launch. Toolbox imports those settings automatically; existing Toolbox sound settings take priority. Check the imported values before removing the old folder.
-
-If the import fails, sound pitch stays inactive. Restore a readable settings file and restart, or use **Use current Toolbox sound settings instead** to keep the values shown in Toolbox.
+## Updating and compatibility
 
 Loco Sound Pitch is incompatible with ZSounds. Choose which one you want to use.
 
 When updating Toolbox, keep its Settings.xml to preserve your preferences.
-
-For DVLocoBogieVisuals, close the game, back up its mod folder, and move that
-folder outside the game's Mods directory before the next launch. Keep the
-standalone source/package as a fallback. The Toolbox copy stays inactive while
-the standalone is loaded, even if its UMM checkbox was unticked mid-session.
-Bogie Edge Diagnostic Probe remains a separate mod.
 
 ## Toggles and restarts
 

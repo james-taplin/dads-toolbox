@@ -398,8 +398,8 @@ public static class NativeSoundChecks
             module = Module();
             Call(module, "Configure", false, true);
             Check(!Active(module) && OwnedMethods(Owner).Length == 0, "saved off creates no owned patches");
-            conflict = "Standalone sound mod loaded; restart required"; Call(module, "Configure", true, true);
-            Check(!Active(module) && Status(module).Contains("Standalone"), "native parent conflict probe preserves desired-on while inactive");
+            conflict = "ZSounds loaded; restart required"; Call(module, "Configure", true, true);
+            Check(!Active(module) && Status(module).Contains("ZSounds"), "public audio incompatibility probe preserves desired-on while inactive");
             conflict = null; Call(module, "Configure", true, true);
             Check(Active(module), "actual six native Harmony class processors activate");
             Check(OwnedMethods(Owner).Length == 20, "exactly twenty intended native audio methods patched under exclusive owner");
@@ -420,7 +420,8 @@ public static class NativeSoundChecks
             Check(ticks == 3 && pending == 7, "parent frame dispatcher keeps quarterly discovery cadence and one pending dispatch per update");
             Check(stableReads==0,"stable active sound ticks perform zero Harmony registry snapshots or patch-info reads");
             MetadataStart();Call(module,"Refresh");int refreshReads=MetadataStop();
-            Check(Active(module) && refreshReads>0,"explicit refresh still fully reconciles residual Harmony ownership");
+            Check(Active(module) && refreshReads==0 && OwnedMethods(Owner).Length==20,
+                "explicit active refresh retains the intended hook set without scanning for private legacy owners");
             conflict="CCL is temporarily unavailable";
             MetadataStart();Call(module,"Tick",1f);int lostReads=MetadataStop();
             Check(!Active(module) && lostReads>0,"cheap dependency loss stops sound and verifies patch cleanup");
@@ -428,13 +429,6 @@ public static class NativeSoundChecks
             Check(blockedReads==0,"unchanged waiting state does not repeatedly sweep retained ownership or cleanup metadata");
             conflict=null;MetadataStart();Call(module,"Tick",2f);int readyReads=MetadataStop();
             Check(Active(module) && readyReads>0,"late dependency readiness revalidates ownership and activates sound");
-            var lateStandalone=ForeignPatch("SteamSizePitch",T("LayeredAudio+Layer").GetMethod("SetPitch",BF));
-            MetadataStart();Call(module,"Refresh");int residualReads=MetadataStop();
-            Check(!Active(module) && residualReads>0 && OwnedMethods("SteamSizePitch").Length==1,"retry detects silent residual standalone patches while preserving the foreign owner");
-            MetadataStart();foreach(float now in new[]{3f,3.25f,3.5f})Call(module,"Tick",now);int residualWaitReads=MetadataStop();
-            Check(residualWaitReads==0,"residual-owner blocked sound performs no global scan on stable polling ticks");
-            Unpatch(lateStandalone,"SteamSizePitch");Call(module,"Refresh");
-            Check(Active(module),"explicit retry after residual removal restores normal sound updates");
             Unpatch(metadataCounter,"dads-toolbox-fixture.sound-metadata");
             Unpatch(clock, "dads-toolbox-fixture.sound-clock");
             var f = CreateAudio();
@@ -496,12 +490,9 @@ public static class NativeSoundChecks
             Call(module, "Configure", true, true); Pitch(f); Discover(f);
             Check(Active(module) && Near(f.source.pitch, f.baseline * factor) && Near(f.direct.pitch, .77f), "re-enable restores effect without reclaiming relinquished source");
             Check(OwnedMethods(Owner).Select(m => m.ToString()).OrderBy(x => x).SequenceEqual(initial), "re-enable restores exact native hook set");
-            conflict = "Late standalone activation"; Call(module, "Configure", true, true);
+            conflict = "Late ZSounds activation"; Call(module, "Configure", true, true);
             Check(!Active(module) && Near(f.source.pitch, f.baseline), "late native conflict stops and restores only sound module");
             conflict = null; Call(module, "Configure", true, true);
-            var old = ForeignPatch("SteamSizePitch", target); Call(module, "Configure", true, true);
-            Check(!Active(module) && OwnedMethods("SteamSizePitch").Length == 1 && Status(module).Contains("restart"), "residual standalone owner blocks without unpatching foreign implementation");
-            Unpatch(old, "SteamSizePitch");
             Check((bool)Call(module, "Unload"), "final unload cleans stopped engine");
             Call(module, "Configure", true, true);
             Check(!Active(module) && OwnedMethods(Owner).Length == 0, "final unloaded instance cannot restart");
@@ -526,7 +517,7 @@ public static class NativeSoundChecks
         {
             try { if (module != null) Call(module, "Unload"); } catch (Exception ex) { report.AppendLine("CLEANUP " + ex); failures++; }
             countMetadata=false;
-            foreach (var id in new[] { Owner, Other, "SteamSizePitch", "dads-toolbox-fixture.sound-clock", "dads-toolbox-fixture.sound-throw", "dads-toolbox-fixture.sound-metadata", "dads-toolbox-fixture.sound-signatures" })
+            foreach (var id in new[] { Owner, Other, "dads-toolbox-fixture.sound-clock", "dads-toolbox-fixture.sound-throw", "dads-toolbox-fixture.sound-metadata", "dads-toolbox-fixture.sound-signatures" })
                 try { if (harmony != null) Unpatch(Activator.CreateInstance(harmony.GetType("HarmonyLib.Harmony"), id), id); } catch { }
             foreach (var obj in objects.AsEnumerable().Reverse()) if (obj) Object.DestroyImmediate(obj);
             report.AppendLine("Checks: " + checks + "; failures: " + failures);

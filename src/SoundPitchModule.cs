@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Xml.Serialization;
 using HarmonyLib;
 
 namespace DadsToolbox.LocoSound
 {
-    // Field names intentionally match SteamSizePitch 0.2.0 Settings.xml.
+    // Retain the existing Toolbox XML field names and stored values.
     [Serializable]
     public sealed class SoundOptions
     {
@@ -39,23 +37,6 @@ namespace DadsToolbox.LocoSound
         private static float Safe(float value, float fallback, float minimum, float maximum) =>
             float.IsNaN(value) || float.IsInfinity(value) ? fallback : Math.Max(minimum, Math.Min(maximum, value));
 
-        public static bool TryReadLegacySettings(string path, out SoundOptions options, out string reason)
-        {
-            options = null;
-            if (string.IsNullOrEmpty(path) || !File.Exists(path))
-            { reason = "No standalone sound settings file was found."; return false; }
-            try
-            {
-                var serializer = new XmlSerializer(typeof(SoundOptions), new XmlRootAttribute("Settings"));
-                using (var stream = File.OpenRead(path)) options = (SoundOptions)serializer.Deserialize(stream);
-                if (options == null) throw new InvalidDataException("The sound settings file is empty.");
-                options.Normalize();
-                reason = "Imported standalone sound settings; the original file was preserved.";
-                return true;
-            }
-            catch (Exception ex)
-            { options = null; reason = "Could not import standalone sound settings: " + ex.Message; return false; }
-        }
     }
 
     [Serializable]
@@ -69,7 +50,6 @@ namespace DadsToolbox.LocoSound
     public sealed class SoundPitchModule
     {
         public const string Owner = "jimtaplin.derailvalley.toolbox.locosoundpitch";
-        public const string StandaloneId = "SteamSizePitch";
         private static SoundPitchModule current;
         private readonly SoundOptions options;
         private readonly Action<string> logger;
@@ -105,7 +85,7 @@ namespace DadsToolbox.LocoSound
             Reconcile(true);
         }
 
-        private void Reconcile(bool validateOwnership)
+        private void Reconcile(bool force)
         {
             if (!DesiredEnabled || !parentActive)
             {
@@ -117,12 +97,11 @@ namespace DadsToolbox.LocoSound
             string availability = Availability();
             // Poll cheap dependency state, not Harmony's entire patch registry.
             // Stable waiting/blocked states also need no repeated cleanup sweep.
-            if (!validateOwnership && compatibilityChecked && availability == lastAvailability) return;
+            if (!force && compatibilityChecked && availability == lastAvailability) return;
             lastAvailability = availability;
             compatibilityChecked = true;
-            string conflict = availability ?? ResidualConflict();
-            if (conflict != null)
-            { if (StopCore()) SetStatus("Inactive: " + conflict); return; }
+            if (availability != null)
+            { if (StopCore()) SetStatus("Inactive: " + availability); return; }
             if (Active) return;
             Install();
         }
@@ -254,17 +233,6 @@ namespace DadsToolbox.LocoSound
                 if (conflictReason == null) return "sound compatibility probe is unavailable.";
                 string reason = conflictReason();
                 return string.IsNullOrEmpty(reason) ? null : reason;
-            }
-            catch (Exception ex) { return "sound compatibility check failed: " + ex.Message; }
-        }
-
-        private string ResidualConflict()
-        {
-            try
-            {
-                if (Harmony.GetAllPatchedMethods().Any(method => Harmony.GetPatchInfo(method)?.Owners.Contains(StandaloneId) == true))
-                    return "standalone SteamSizePitch patches remain loaded. Disable/remove it and restart.";
-                return null;
             }
             catch (Exception ex) { return "sound compatibility check failed: " + ex.Message; }
         }

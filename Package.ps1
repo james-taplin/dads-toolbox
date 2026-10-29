@@ -1,6 +1,6 @@
 param(
     [string]$GamePath = 'B:\SteamLibrary\steamapps\common\Derail Valley',
-    [ValidatePattern('^(dev|rc\.[1-9][0-9]*)?$')][string]$ReleaseSuffix = 'rc.2'
+    [ValidatePattern('^(dev|rc\.[1-9][0-9]*)?$')][string]$ReleaseSuffix = 'rc.3'
 )
 $ErrorActionPreference = 'Stop'
 & (Join-Path $PSScriptRoot 'Build.ps1') -GamePath $GamePath

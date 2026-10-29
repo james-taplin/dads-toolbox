@@ -32,7 +32,6 @@ namespace DadsToolbox
     public sealed class DoubleTrackSigns
     {
         public const string DependencyId = "DoubleTrack";
-        public const string StandaloneId = "DoubleTrackSignClearance";
         private static readonly Version SupportedVersion = new Version(2, 1, 1);
         private readonly SignClearanceOptions options;
         private readonly Action<string> logger;
@@ -101,14 +100,6 @@ namespace DadsToolbox
             if (fault != null) { Stop("Inactive: sign scan failed (" + fault + "). Re-scan to retry."); return; }
             try
             {
-                var standalone = UnityModManager.FindMod(StandaloneId);
-                // The original 1.0.0 loader never stopped its watcher. Even an
-                // inactive loaded entry can still move signs until a restart.
-                if (standalone != null && (standalone.Loaded || standalone.Active))
-                {
-                    Stop("Inactive: standalone DoubleTrack Sign Clearance is loaded. Disable or remove it and restart.");
-                    return;
-                }
                 var dependency = UnityModManager.FindMod(DependencyId);
                 if (dependency == null || !dependency.Loaded || !dependency.Active)
                 {

@@ -38,7 +38,6 @@ public static class IntegrationTests
         var speed=new Harmony("hudguard.tests.speed");
         var injected=new Harmony("hudguard.tests.injected");
         var duplicate=new Harmony("hudguard.tests.duplicate");
-        var legacy=new Harmony("jimtaplin.derailvalley.rollingstockcompatibility");
         try
         {
             Check("Actual installed HUD has three providers",NativeHud.Providers.Count==3);
@@ -152,25 +151,6 @@ public static class IntegrationTests
             duplicate.Unpatch(target,HarmonyPatchType.Finalizer,duplicate.Id);module.Refresh();
             Check("Conflict removal allows explicit recovery",module.State==HudGuardState.Enabled && AllOwned(true));
 
-            string legacyMods=Environment.GetEnvironmentVariable("TOOLBOX_LEGACY_MODS") ?? Path.Combine(NativeHud.GameRoot,"Mods");
-            Assembly old=Assembly.LoadFrom(Path.Combine(legacyMods,"DV_RSCompatibility","DVRollingStockCompatibility.dll"));
-            old.GetType("DVRollingStockCompatibility.HudLocoProviderFix",true).GetMethod("Install",BindingFlags.NonPublic|BindingFlags.Static).Invoke(null,new object[]{legacy});
-            legacy.Patch(sentinel,postfix:new HarmonyMethod(typeof(NativeHud).GetMethod("SentinelPostfix")));
-            module.Refresh();
-            Check("Actual separately compiled legacy guard blocks duplicate protection",module.State==HudGuardState.BlockedByStandalone && AllOwned(false));
-            foreach(MethodInfo m in NativeHud.Providers)Check("Legacy patch survives module cleanup "+m.Name,NativeHud.Has(m,legacy.Id) && NativeHud.Invoke(m,NativeHud.UnsupportedCar)==null);
-            Check("Legacy owner's unrelated patch also survives",NativeHud.Has(sentinel,legacy.Id));
-            module.Configure(false,true);
-            Check("Option off leaves standalone helper entirely alone",NativeHud.Has(target,legacy.Id) && NativeHud.Has(sentinel,legacy.Id));
-            foreach(MethodInfo m in NativeHud.Providers)legacy.Unpatch(m,HarmonyPatchType.Finalizer,legacy.Id);
-            legacy.Unpatch(sentinel,HarmonyPatchType.Postfix,legacy.Id);
-            var oldEntry=NativeHud.Entry(HudGuardModule.StandaloneModId,old,true);
-            UnityModManager.modEntries.Add(oldEntry);module.Configure(true,true);
-            Check("Active standalone UMM entry blocks before patching",module.State==HudGuardState.BlockedByStandalone && AllOwned(false));
-            NativeHud.Field(oldEntry.GetType(),"mActive").SetValue(oldEntry,false);module.Refresh();
-            Check("Inactive standalone without patches permits module",module.State==HudGuardState.Enabled && AllOwned(true));
-            UnityModManager.modEntries.Remove(oldEntry);
-
             module.Stop();
             var install=typeof(HudGuardModule).GetMethod("InstallProviders",BindingFlags.NonPublic|BindingFlags.Instance);
             bool installed=(bool)install.Invoke(module,new object[]{new List<MethodInfo>{target,typeof(NativeHud).GetMethod("VoidTarget")}});
@@ -196,7 +176,7 @@ public static class IntegrationTests
         finally
         {
             NativeHud.ThrowMode=0;module.Unload();
-            foreach(Harmony h in new[]{foreign,speed,injected,duplicate,legacy})h.UnpatchAll(h.Id);
+            foreach(Harmony h in new[]{foreign,speed,injected,duplicate})h.UnpatchAll(h.Id);
             UnityModManager.modEntries.Clear();
         }
         Check("Every HUD module patch removed at fixture exit",!Harmony.HasAnyPatches(HudGuardModule.HarmonyId));

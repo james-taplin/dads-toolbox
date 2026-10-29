@@ -21,7 +21,7 @@ public static class NativeSignClearanceChecks
     static int checks, failures;
     static Assembly toolbox, umm, dt, native;
     static Type main, registryType, trackType, optionsType, moduleType;
-    static object parent, dependency, helper, skinEntry;
+    static object parent, dependency, skinEntry;
     static Component registry;
     static FieldInfo singleton, signsField, shiftField;
     static IList entries;
@@ -262,18 +262,6 @@ public static class NativeSignClearanceChecks
             Toggle(true); Refresh(); Tick(24.4f);
             Check(Active && SkinActive && Near(parentOff.transform.position.x,-2),"parent re-enable restores both independently selected modules");
 
-            var blocked=Sign(1); Signs(blocked);
-            var legacyMods=Environment.GetEnvironmentVariable("TOOLBOX_LEGACY_MODS") ?? Path.Combine(game,"Mods");
-            var standaloneAssembly=Assembly.LoadFrom(Path.Combine(legacyMods,"DoubleTrackSignClearance/DoubleTrackSignClearance.dll"));
-            helper=Entry("DoubleTrackSignClearance",new Version(1,0,0),standaloneAssembly,false); entries.Add(helper);
-            Tick(25.5f);
-            Check(!Active && SkinActive && Near(blocked.transform.position.x,1) && Status.Contains("restart"),"loaded inactive standalone stops actual native sign scanning without disturbing skin protection");
-            SendDependencyEvent(helper,true); Tick(26.6f);
-            Check(!Active && Near(blocked.transform.position.x,1),"late active standalone remains blocked before transform correction");
-            SendDependencyEvent(helper,false);
-            Check(!Active && (bool)Get(Settings,"DoubleTrackSignClearance"),"standalone toggle-off retains conflict and selected preference for safe restart migration");
-            entries.Remove(helper); Refresh(); Tick(27.7f);
-            Check(Active && Near(blocked.transform.position.x,-2),"cold-host equivalent without loaded helper permits the Toolbox correction");
             SendDependencyEvent(dependency,false); var dtOff=Sign(1); Signs(dtOff); Tick(28.8f);
             Check(!Active && Near(dtOff.transform.position.x,1) && SkinActive,"DoubleTrack deactivation stops only its sign scanner");
             SendDependencyEvent(dependency,true); Tick(29.9f);

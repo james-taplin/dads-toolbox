@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Xml;
 using UnityEngine;
 using UnityModManagerNet;
 using CCLSmokeFix;
@@ -23,8 +21,6 @@ namespace DadsToolbox
         public bool BogieVisualSmoothing = true;
         public SignClearanceOptions SignClearance = new SignClearanceOptions();
         public SoundOptions Sound = new SoundOptions();
-        public bool SoundSettingsMigrationComplete;
-        public bool SoundSettingsMigrationPending;
         public void Normalize()
         {
             if (SignClearance == null) SignClearance = new SignClearanceOptions();
@@ -48,7 +44,7 @@ namespace DadsToolbox
         private static SoundPitchModule sound;
         private static BogieVisualModule bogies;
         private static bool enabled, loaded, finalShutdownStarted;
-        private static string status, registrationStatus, migrationStatus, smokeStatus;
+        private static string status, registrationStatus, smokeStatus;
         private static readonly Dictionary<string, string> faults = new Dictionary<string, string>();
 
         public static bool Load(UnityModManager.ModEntry modEntry)
@@ -59,7 +55,6 @@ namespace DadsToolbox
             settings = UnityModManager.ModSettings.Load<ToolboxSettings>(entry) ?? new ToolboxSettings();
             settings.Normalize();
             faults.Clear();
-            MigrateSoundSettings();
             skinDamage = new SkinDamageFix();
             skinRegistration = new SkinRegistrationFix();
             signs = new DoubleTrackSigns(settings.SignClearance, text => Log("DoubleTrack signs", text));
@@ -97,10 +92,7 @@ namespace DadsToolbox
             bool eligible = ccl != null && ccl.Loaded && ccl.Active;
             if (enabled && settings.SmokeFix && eligible)
             {
-                smoke.Install(text => Log("CCL Smoke Fix", text), () => {
-                    var m = UnityModManager.FindMod(SmokeFixModule.StandaloneModId);
-                    return m != null && m.Active;
-                });
+                smoke.Install(text => Log("CCL Smoke Fix", text));
                 smokeStatus = null; // Show live module status, including runtime faults.
             }
             else if (!smoke.Stop()) throw new InvalidOperationException(smoke.Status);
@@ -109,14 +101,9 @@ namespace DadsToolbox
 
         private static string SoundConflict()
         {
-            if (!settings.SoundSettingsMigrationComplete)
-                return migrationStatus ?? "Sound settings migration is incomplete; resolve it before enabling sound pitch.";
-            foreach (string id in new[] { "SteamSizePitch", "ZSounds" })
-            {
-                var m = UnityModManager.FindMod(id);
-                if (m != null && (m.Loaded || m.Active))
-                    return id + " is loaded. Disable/remove it and restart before using Toolbox sound pitch.";
-            }
+            var incompatible = UnityModManager.FindMod("ZSounds");
+            if (incompatible != null && (incompatible.Loaded || incompatible.Active))
+                return "ZSounds is loaded. Disable/remove it and restart before using Toolbox sound pitch.";
             var ccl = UnityModManager.FindMod("DVCustomCarLoader");
             if (ccl == null || !ccl.Loaded || !ccl.Active)
                 return "requires loaded and active CCL.";
@@ -167,16 +154,14 @@ namespace DadsToolbox
             if (!loaded || finalShutdownStarted || mod == null || mod.Info == null) return;
             ApplySettings();
             string id = mod.Info.Id;
-            if (id == DoubleTrackSigns.DependencyId || id == DoubleTrackSigns.StandaloneId)
+            if (id == DoubleTrackSigns.DependencyId)
                 Run("DoubleTrack signs", () => signs.Refresh());
-            if (id == "HeadsUpDisplay_994" || id == "DVRollingStockCompatibility")
+            if (id == "HeadsUpDisplay_994")
                 Run("HUD Guard", () => hud.Refresh());
-            if (id == "DVCustomCarLoader" || id == "DVCCLControlFix")
+            if (id == "DVCustomCarLoader")
                 Run("CCL Control Fix", () => controls.Refresh());
-            if (id == "SteamSizePitch" || id == "ZSounds" || id == "DVCustomCarLoader")
+            if (id == "ZSounds" || id == "DVCustomCarLoader")
                 Run("Loco Sound Pitch", () => sound.Refresh());
-            if (id == BogieVisualModule.StandaloneId)
-                Run("Bogie Visual Smoothing", () => bogies.Refresh());
         }
 
         private static bool OnToggle(UnityModManager.ModEntry mod, bool value)
@@ -227,7 +212,6 @@ namespace DadsToolbox
             if (!loaded || finalShutdownStarted) return;
             Run("HUD Guard", () => { hud.Configure(settings.HudGuard, enabled); hud.Tick(); });
             Run("CCL Control Fix", () => controls.Tick());
-            Run("Bogie Visual Smoothing", () => bogies.Tick());
             if (enabled)
             {
                 Run("DoubleTrack signs", () => signs.Tick(Time.realtimeSinceStartup));
@@ -237,20 +221,11 @@ namespace DadsToolbox
 
         private static void OnGUI(UnityModManager.ModEntry mod)
         {
-            GUILayout.Label("Dad's Toolbox — 1.0.0-rc.2");
+            GUILayout.Label("Dad's Toolbox — 1.0.0-rc.3");
             Option(ref settings.HudGuard, "HUD Guard", hud.Status);
             Option(ref settings.CclControlFix, "CCL Control Fix", controls.Status);
             GUILayout.Label("Existing control/prefab changes require restart for complete restoration.");
             Option(ref settings.LocoSoundPitch, "Loco Sound Pitch", sound.Status);
-            if (!string.IsNullOrEmpty(migrationStatus)) GUILayout.Label(migrationStatus);
-            if (settings.SoundSettingsMigrationPending && GUILayout.Button("Use current Toolbox sound settings instead"))
-            {
-                settings.SoundSettingsMigrationPending = false;
-                settings.SoundSettingsMigrationComplete = true;
-                migrationStatus = "Using explicitly selected Toolbox sound settings; standalone file retained.";
-                settings.Save(entry);
-                ApplySettings();
-            }
             Run("Loco Sound Pitch", () => { if (sound.DrawOptions()) ApplySettings(); });
             Option(ref settings.SmokeFix, "CCL Smoke Fix", smokeStatus ?? smoke.Status);
             GUILayout.Label(SmokeFixModule.ReloadNotice);
@@ -292,53 +267,6 @@ namespace DadsToolbox
         }
 
         private static void OnSaveGUI(UnityModManager.ModEntry mod) { settings.Normalize(); settings.Save(mod); }
-
-        private static void MigrateSoundSettings()
-        {
-            migrationStatus = null;
-            if (settings.SoundSettingsMigrationComplete) return;
-            try
-            {
-                string parentFile = Path.Combine(entry.Path, "Settings.xml");
-                if (File.Exists(parentFile))
-                {
-                    var xml = new XmlDocument { XmlResolver = null };
-                    xml.Load(parentFile);
-                    if (!settings.SoundSettingsMigrationPending && xml.DocumentElement != null && xml.DocumentElement.SelectSingleNode("Sound") != null)
-                    {
-                        settings.SoundSettingsMigrationComplete = true;
-                        return; // Explicit Toolbox values take precedence over standalone.
-                    }
-                }
-                string modsRoot = Directory.GetParent(Path.GetFullPath(entry.Path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)).FullName;
-                string legacyFile = Path.Combine(modsRoot, "SteamSizePitch", "Settings.xml");
-                if (File.Exists(legacyFile))
-                {
-                    SoundOptions migrated;
-                    string reason;
-                    if (!SoundOptions.TryReadLegacySettings(legacyFile, out migrated, out reason))
-                    {
-                        settings.SoundSettingsMigrationPending = true;
-                        migrationStatus = "Sound settings migration failed: " + reason + ". Sound remains inactive; original retained; retry next load.";
-                        settings.Save(entry);
-                        Log("Loco Sound Pitch", migrationStatus);
-                        return;
-                    }
-                    settings.Sound = migrated;
-                    migrationStatus = "Imported existing SteamSizePitch settings; original file retained.";
-                }
-                settings.SoundSettingsMigrationComplete = true;
-                settings.SoundSettingsMigrationPending = false;
-                settings.Save(entry); // Write only our file, never the standalone.
-            }
-            catch (Exception ex)
-            {
-                settings.SoundSettingsMigrationComplete = false;
-                settings.SoundSettingsMigrationPending = true;
-                migrationStatus = "Sound settings migration unavailable: " + ex.Message;
-            }
-            if (migrationStatus != null) Log("Loco Sound Pitch", migrationStatus);
-        }
 
         private static void Run(string name, Action action)
         {

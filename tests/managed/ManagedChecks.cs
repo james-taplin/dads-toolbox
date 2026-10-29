@@ -11,13 +11,13 @@ using UnityModManagerNet;
 
 public static class ManagedChecks
 {
-    private static string managed, toolboxPath, fakePath, output, doubleTrackPath, standalonePath;
+    private static string managed, toolboxPath, fakePath, output, doubleTrackPath;
     private static int passed, failed;
     private static readonly List<string> checks = new List<string>();
     public static int Main(string[] args)
     {
         managed = args[0]; toolboxPath = args[1]; fakePath = args[2]; output = args[3];
-        doubleTrackPath = args[4]; standalonePath = args[5];
+        doubleTrackPath = args[4];
         AppDomain.CurrentDomain.AssemblyResolve += Resolve;
         try { return Run(); }
         catch (Exception ex) { Console.WriteLine("HARNESS ERROR: " + ex); return 2; }
@@ -236,28 +236,6 @@ public static class ManagedChecks
             Check(!Signs().Active && Signs().Status.Contains("API is incompatible"), "wrong DoubleTrack runtime assembly fails closed");
             SetField(dt,"mAssembly",actualAssembly); parent.OnToggle(parent,true);
             Check(Signs().Active, "supported actual DoubleTrack assembly recovers after compatibility failure");
-
-            var helper = Entry(DoubleTrackSigns.StandaloneId,new Version(1,0,0),null,false);
-            SetField(helper,"mStarted",false); helper.Enabled = true;
-            UnityModManager.modEntries.Add(helper); Signs().Refresh();
-            Check(!helper.Loaded && !helper.Active && Signs().Active,
-                "installed but never loaded standalone is safe despite enabled restart preference");
-            SetField(helper,"mAssembly",Assembly.LoadFrom(standalonePath)); SetField(helper,"mStarted",true);
-            Signs().Tick(100);
-            Check(helper.Loaded && !helper.Active && !Signs().Active && Signs().Status.Contains("restart"),
-                "poll detects loaded inactive standalone without relying on an activation event");
-            Check(Settings().DoubleTrackSignClearance && Module().Active,
-                "standalone conflict preserves sign preference and independent Skin Manager patch");
-            helper.OnToggle = (m,v) => true; helper.Active = true;
-            Check(!Signs().Active && Signs().Status.Contains("standalone"), "actual UMM standalone activation keeps sign module blocked");
-            helper.Active = false;
-            Check(helper.Loaded && !Signs().Active,
-                "toggling off a loaded standalone does not bypass restart protection against legacy watchers");
-            SetField(helper,"mAssembly",null); SetField(helper,"mStarted",false); SetField(helper,"mActive",true);
-            Signs().Refresh();
-            Check(!Signs().Active, "active standalone is a conflict even with inconsistent Loaded metadata");
-            SetField(helper,"mActive",false); Signs().Refresh();
-            Check(Signs().Active, "simulated cold-start unloaded standalone permits the selected Toolbox correction");
 
             Settings().DoubleTrackSignClearance = false; parent.OnToggle(parent,true);
             Check(!Signs().Active && Signs().Status == "Off" && Module().Active, "sign option off leaves Skin Manager patch active");

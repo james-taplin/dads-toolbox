@@ -14,7 +14,7 @@ before loading native game assemblies. Actual enable/disable/destroy callbacks
 are exercised; world and iterator inputs are explicit. Real game scheduler,
 camera and constraint-solver ordering remain outside these checks.
 
-Coverage includes standalone conflicts, no-CCL activation, fresh and duplicate
+Coverage includes no-CCL activation, fresh and duplicate
 lifetimes, parent and feature switches, native owner discovery and ambiguous
 constraints, proxy takeover/restoration, local wheel/rod animation, final-pose
 sampling, displacement limits, cancellation during yielded source replacement,

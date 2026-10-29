@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0-rc.3 — 29 October 2026
+
+- Removed development-only standalone detection and sound-settings import.
+- Kept required-mod checks, ZSounds compatibility and existing Toolbox preferences.
+
 ## 1.0.0-rc.2 — 29 October 2026
 
 - Added Bogie Visual Smoothing, based on the working standalone 0.4.2, with its own switch and manual refresh/report controls.

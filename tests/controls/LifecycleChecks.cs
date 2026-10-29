@@ -82,20 +82,7 @@ internal static class LifecycleChecks
         Check(OwnedPatchCount(ControlsModule.HarmonyOwner)==0 && Harmony.GetPatchInfo(sentinel).Owners.Contains(foreign.Id),"partial installation rolls back only owned patches");
         types[2]=saved; partial.Refresh(); Check(partial.Active,"explicit retry after corrected patch failure recovers"); partial.Unload();
 
-        CheckResidualOwnerBoundaries(sentinel);
-
-        // Conflict checks run last because a loaded standalone intentionally
-        // establishes a process-wide restart boundary.
-        var neverLoaded=Entry(ControlsModule.StandaloneModId,false,false); neverLoaded.Enabled=true;
-        UnityModManager.modEntries.Add(neverLoaded);
-        var legacy=new ControlsModule(_=>{}); legacy.Configure(true,true);
-        Check(legacy.Active,"installed but never loaded inactive standalone does not conflict");
-        Set(neverLoaded,"mAssembly",typeof(LifecycleChecks).Assembly); Set(neverLoaded,"mStarted",true); legacy.Refresh();
-        Check(!legacy.Active && legacy.RestartRequired && legacy.Status.Contains("restart"),"loaded inactive standalone blocks and requires restart");
-        UnityModManager.modEntries.Remove(neverLoaded); legacy.Refresh();
-        Check(!legacy.Active,"removing a loaded standalone cannot bypass prefab restart boundary");
-        legacy.Unload(); var stillBlocked=new ControlsModule(_=>{}); stillBlocked.Configure(true,true);
-        Check(!stillBlocked.Active && stillBlocked.RestartRequired,"module recreation cannot bypass legacy restart boundary"); stillBlocked.Unload();
+        CheckOwnOwnerBoundaries(sentinel);
         foreign.Unpatch(sentinel,HarmonyPatchType.All,foreign.Id);
         Check(OwnedPatchCount(ControlsModule.HarmonyOwner)==0,"all integration fixture lifetimes leave no owned patches");
         Directory.CreateDirectory(output);
@@ -130,11 +117,11 @@ internal static class LifecycleChecks
             Check(module.Active && patchEnumerations==0 && patchMetadataReads==0,
                 "128 steady active control polls perform zero global patch enumerations and zero patch-info reads");
             module.Configure(true,true);
-            Check(module.Active && patchEnumerations>0 && patchMetadataReads>0,
-                "explicit control configure validates residual ownership even when selected values are unchanged");
+            Check(module.Active && patchEnumerations==0 && patchMetadataReads==0,
+                "unchanged active control configure needs no global ownership scan");
             patchEnumerations=patchMetadataReads=0; module.Refresh();
-            Check(module.Active && patchEnumerations>0 && patchMetadataReads>0,
-                "explicit control retry/refresh reconciles global ownership without duplicating hooks");
+            Check(module.Active && patchEnumerations==0 && patchMetadataReads==0,
+                "active control refresh retains owned hooks without global metadata reads");
             Set(ccl,"mActive",false); patchEnumerations=patchMetadataReads=0; Poll(module);
             Check(!module.Active && patchEnumerations>0,
                 "cheap polled CCL disappearance still performs owned teardown verification");
@@ -152,8 +139,8 @@ internal static class LifecycleChecks
             var replacement=Entry(ControlsModule.DependencyId,true,true);
             UnityModManager.modEntries.Remove(ccl); UnityModManager.modEntries.Add(replacement);
             patchEnumerations=patchMetadataReads=0; Poll(module);
-            Check(module.Active && patchEnumerations>0,
-                "replacement active CCL entry triggers ownership reconciliation even without a toggle event");
+            Check(module.Active && patchEnumerations==0 && patchMetadataReads==0,
+                "replacement active CCL entry updates dependency state without rescanning an already active owner");
             UnityModManager.modEntries.Remove(replacement); UnityModManager.modEntries.Add(ccl); Poll(module);
         }
         finally
@@ -162,32 +149,26 @@ internal static class LifecycleChecks
             observer.Unpatch(metadata,HarmonyPatchType.All,observerId);
         }
     }
-    private static void CheckResidualOwnerBoundaries(MethodInfo sentinel)
+    private static void CheckOwnOwnerBoundaries(MethodInfo sentinel)
     {
-        var legacy=new Harmony(ControlsModule.StandaloneModId);
+        var orphan=new Harmony(ControlsModule.HarmonyOwner);
         var hook=new HarmonyMethod(typeof(LifecycleChecks).GetMethod("Prefix"));
         var cold=new ControlsModule(_=>{});
-        legacy.Patch(sentinel,prefix:hook);
+        orphan.Patch(sentinel,prefix:hook);
         cold.Configure(true,true);
-        Check(!cold.Active && cold.RestartRequired && cold.Status.Contains("restart"),
-            "cold control activation detects residual standalone ownership without any UMM standalone entry");
-        legacy.Unpatch(sentinel,HarmonyPatchType.All,ControlsModule.StandaloneModId);
-        cold.Refresh();
-        Check(!cold.Active,"removing residual standalone patches cannot bypass the restart boundary"); cold.Unload();
-        // Simulate another cold process between independent restart-boundary
-        // scenarios. Production never clears this process-wide safety latch.
-        typeof(ControlsModule).GetField("standaloneApplied",BindingFlags.NonPublic|BindingFlags.Static).SetValue(null,false);
-        var late=new ControlsModule(_=>{}); late.Configure(true,true);
-        Check(late.Active,"isolated clean lifetime starts before a late residual ownership test");
-        legacy.Patch(sentinel,prefix:hook);
-        late.Refresh();
-        Check(!late.Active && late.RestartRequired && late.Status.Contains("restart"),
-            "explicit control refresh detects late residual standalone ownership and stops only its own hooks");
-        Check(Harmony.GetPatchInfo(sentinel).Owners.Contains(ControlsModule.StandaloneModId) &&
+        Check(!cold.Active && !cold.RestartRequired && cold.Status.Contains("already in use"),
+            "activation refuses an occupied integrated Harmony owner without inventing a prefab restart requirement");
+        Check(cold.Stop() && Harmony.GetPatchInfo(sentinel).Owners.Contains(ControlsModule.HarmonyOwner) &&
             Harmony.GetPatchInfo(sentinel).Owners.Contains("toolbox.controls.fixture.foreign"),
-            "residual control conflict cleanup preserves both standalone and unrelated owners");
-        legacy.Unpatch(sentinel,HarmonyPatchType.All,ControlsModule.StandaloneModId); late.Unload();
-        typeof(ControlsModule).GetField("standaloneApplied",BindingFlags.NonPublic|BindingFlags.Static).SetValue(null,false);
+            "rejected activation cannot remove another lifetime's patches or unrelated foreign patches");
+        orphan.Unpatch(sentinel,HarmonyPatchType.All,ControlsModule.HarmonyOwner);
+        cold.Configure(true,true);
+        Check(cold.Active,"resolved integrated-owner collision permits explicit activation without a sticky process latch");
+        cold.Configure(true,true); cold.Refresh();
+        Check(OwnedPatchCount(ControlsModule.HarmonyOwner)==6 && Harmony.GetPatchInfo(sentinel).Owners.Contains("toolbox.controls.fixture.foreign"),
+            "recovered activation and refresh retain one set of control hooks and preserve foreign ownership");
+        Check(cold.Unload() && OwnedPatchCount(ControlsModule.HarmonyOwner)==0 && Harmony.GetPatchInfo(sentinel).Owners.Contains("toolbox.controls.fixture.foreign"),
+            "recovered owner unload removes only its own patches");
     }
     private static void CheckCloning()
     {

@@ -120,7 +120,6 @@ public static class NativeBogieChecks
             RunCase("standalone constant and pose parity", ParityChecks);
             RunCase("standalone and integrated native visual comparison", VisualComparisonChecks);
             RunCase("parent integration", ParentChecks);
-            RunCase("standalone conflicts", ConflictChecks);
         }
         catch (Exception ex) { Check(false, "harness setup: " + ex); }
         finally
@@ -188,7 +187,7 @@ public static class NativeBogieChecks
         Call(module, "Configure", true, false); Check(!Active(module) && (bool)Property(module, "DesiredEnabled"), "parent disabled retains desired choice without runtime");
         Call(module, "Configure", true, true); var first = RuntimeOf(module);
         Check(Active(module) && first && !((IList)Get(T("UnityModManagerNet.UnityModManager"), "modEntries")).Cast<object>().Any(), "native bogie runtime activates with no CCL or other optional mods");
-        Call(module, "Configure", true, true); Call(module, "Tick");
+        Call(module, "Configure", true, true);
         Check(RuntimeOf(module) == first, "repeat configuration/tick does not duplicate runtime");
         var duplicate = MakeModule(); Call(duplicate, "Configure", true, true);
         Check(!Active(duplicate) && Active(module), "duplicate wrapper lifetime cannot acquire or disrupt runtime ownership");
@@ -519,19 +518,6 @@ public static class NativeBogieChecks
             Check(baseline.replaced && integrated.replaced && baseline.restored && integrated.restored, label + ": native component replacement and original renderer restoration agree");
             Check(baseline.limits.Zip(integrated.limits, Near).All(same => same) && baseline.limitRotations.Zip(integrated.limitRotations, (a, b) => Quaternion.Angle(a, b) < .001f).All(same => same), label + ": bounds-aware position and rotation caps agree with standalone");
             report.AppendLine("MEASURE " + label + ": standalone/integrated build=" + baseline.buildMs.ToString("F3") + "/" + integrated.buildMs.ToString("F3") + "ms; 120 Present calls after20warmup=" + baseline.presentMs.ToString("F3") + "/" + integrated.presentMs.ToString("F3") + "ms; yields=" + baseline.yields + "/" + integrated.yields + "; nodes=" + baseline.nodes + "/" + integrated.nodes + "; meshes=" + baseline.meshes + "/" + integrated.meshes + ". Synthetic host cost includes reflective dispatch; no live FPS or acceptance claim.");
-        }
-    }
-    static void ConflictChecks()
-    {
-        var entries = (IList)Get(T("UnityModManagerNet.UnityModManager"), "modEntries"); var legacy = Entry("DVLocoBogieVisuals", false, false); entries.Add(legacy);
-        var module = MakeModule(); Call(module, "Configure", true, true); Check(Active(module), "installed but never loaded standalone does not block Toolbox");
-        Set(legacy, "mAssembly", standalone ?? toolbox); Set(legacy, "mStarted", true); Call(module, "Refresh"); Check(!Active(module), "loaded inactive standalone blocks duplicate smoothing");
-        Set(legacy, "mStarted", false); Set(legacy, "mAssembly", null); Set(legacy, "mActive", true); Call(module, "Refresh"); Check(!Active(module), "active standalone blocks even when Loaded metadata is false");
-        Set(legacy, "mActive", false); entries.Remove(legacy); Call(module, "Unload");
-        if (standalone != null)
-        {
-            var ghost = Keep(new GameObject("Inactive orphan standalone runtime")); ghost.SetActive(false); ghost.AddComponent(standalone.GetType("DVLocoBogieVisuals.VisualRuntime", true));
-            var guarded = MakeModule(); Call(guarded, "Configure", true, true); Check(!Active(guarded), "orphan standalone runtime is detected even when inactive and absent from UMM entries"); Call(guarded, "Unload"); Object.DestroyImmediate(ghost);
         }
     }
 }

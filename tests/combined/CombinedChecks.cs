@@ -63,9 +63,9 @@ public static class CombinedChecks
         var legacyPath = Path.Combine(parent.Path, "Settings.xml");
         File.WriteAllText(legacyPath, "<ToolboxSettings><ConsistFix>true</ConsistFix><HudGuard>false</HudGuard><CclControlFix>false</CclControlFix><SmokeFix>false</SmokeFix><Sound><Strength>6.4955945</Strength></Sound><SoundSettingsMigrationComplete>true</SoundSettingsMigrationComplete></ToolboxSettings>");
         var legacySettings = UnityModManager.ModSettings.Load<ToolboxSettings>(parent);
-        Check(!legacySettings.HudGuard && !legacySettings.CclControlFix && !legacySettings.SmokeFix && legacySettings.Sound.Strength == 6.4955945f && legacySettings.SoundSettingsMigrationComplete, "0.4.0 XML ignores removed ConsistFix and preserves other preferences");
+        Check(!legacySettings.HudGuard && !legacySettings.CclControlFix && !legacySettings.SmokeFix && legacySettings.Sound.Strength == 6.4955945f, "older XML ignores retired options and preserves existing feature and sound preferences");
         legacySettings.Save(parent);
-        Check(!File.ReadAllText(legacyPath).Contains("<ConsistFix>"), "saving migrated settings removes the obsolete XML option");
+        Check(!File.ReadAllText(legacyPath).Contains("<ConsistFix>") && !File.ReadAllText(legacyPath).Contains("<SoundSettingsMigrationComplete>"), "saving older settings drops obsolete options without changing retained preferences");
         foreach (string flag in Flags) Check((bool)typeof(ToolboxSettings).GetField(flag).GetValue(new ToolboxSettings()), flag + " has its independent enabled default");
 
         for (int mask = 0; mask < 1 << Flags.Length; mask++)
@@ -144,7 +144,6 @@ public static class CombinedChecks
             Check(ParentSubscriptions() == 1 && ToolboxPatchCount() == 0, "recreated parent has one listener and respects saved off preferences");
         }
         finally { parent.OnUnload(parent); UnityModManager.modEntries.Clear(); }
-        MigrationChecks(parent);
         ColdDependencyChecks(parent);
         CleanupFailureChecks(parent);
         FinalUnloadFailureChecks(parent);
@@ -219,20 +218,6 @@ public static class CombinedChecks
         }
         finally { parent.OnUnload(parent); UnityModManager.modEntries.Clear(); }
 
-        var controlStandalone = Entry("DVCCLControlFix", Path.Combine(output, "conflicts", "DVCCLControlFix"));
-        var soundStandalone = Entry("SteamSizePitch", Path.Combine(output, "conflicts", "SteamSizePitch"));
-        controlStandalone.Enabled = true; soundStandalone.Enabled = true;
-        UnityModManager.modEntries.Add(controlStandalone); UnityModManager.modEntries.Add(soundStandalone);
-        ColdSettings().Save(parent);
-        Check(DadsToolbox.Main.Load(parent), "standalone conflicts do not prevent whole parent startup");
-        try
-        {
-            Check(!(bool)GetProperty(ParentField("controls"), "Active") && ((string)GetProperty(ParentField("controls"), "Status")).Contains("restart"), "loaded inactive Controls standalone blocks its feature with restart instruction");
-            Check(!(bool)GetProperty(ParentField("sound"), "Active") && ((string)GetProperty(ParentField("sound"), "Status")).Contains("SteamSizePitch") && ((string)GetProperty(ParentField("sound"), "Status")).Contains("restart"), "loaded inactive Sound standalone blocks its feature with restart instruction");
-            Check(controlStandalone.Loaded && soundStandalone.Loaded && controlStandalone.Enabled && soundStandalone.Enabled && !controlStandalone.Active && !soundStandalone.Active, "parent does not disable or alter conflicting standalone entries");
-            Check(ToolboxPatchCount() == 0 && ColdChoicesPreserved(), "standalone conflicts preserve every independent desired choice");
-        }
-        finally { parent.OnUnload(parent); UnityModManager.modEntries.Clear(); }
     }
     static void CleanupFailureChecks(UnityModManager.ModEntry parent)
     {
@@ -269,60 +254,6 @@ public static class CombinedChecks
     static bool FailedHudStop(ref bool __result) { __result = false; return false; }
     [MethodImpl(MethodImplOptions.NoInlining)] static int ForeignMarker() { return 5; }
     static bool ForeignPrefix(ref int __result) { __result = 17; return false; }
-    static void MigrationChecks(UnityModManager.ModEntry parent)
-    {
-        string original = Path.Combine(Directory.GetParent(parent.Path).FullName, "SteamSizePitch", "Settings.xml");
-        Directory.CreateDirectory(Path.GetDirectoryName(original));
-        string parentFile = Path.Combine(parent.Path, "Settings.xml");
-        string oldParent = "<ToolboxSettings>" + string.Concat(Flags.Select(f => "<" + f + ">false</" + f + ">")) + "</ToolboxSettings>";
-        Func<string, string> legacy = strength => "<Settings><Strength>" + strength + "</Strength><MinimumPitch>0.41</MinimumPitch><NonSteamStrength>2.25</NonSteamStrength><NonSteamMinimumPitch>0.37</NonSteamMinimumPitch><NonSteamMaximumPitch>1.85</NonSteamMaximumPitch><Chuffs>false</Chuffs><Gear>false</Gear><Rolling>false</Rolling><Brakes>false</Brakes><Cocks>false</Cocks><Whistle>false</Whistle><ChuffLoops>false</ChuffLoops><AllSounds>true</AllSounds><TraceAncillaries>true</TraceAncillaries><SharedDonor>2</SharedDonor><DonorOverrides><DonorOverride><LiveryId>fixture_loco</LiveryId><DonorId>fixture_donor</DonorId></DonorOverride></DonorOverrides></Settings>";
-        File.WriteAllText(original, legacy("3.75"));
-        byte[] retained = File.ReadAllBytes(original);
-        File.WriteAllText(parentFile, oldParent);
-        Check(DadsToolbox.Main.Load(parent), "older parent loads while importing sibling standalone sound settings");
-        try
-        {
-            var s = (ToolboxSettings)ParentField("settings"); object o = Get(s, "Sound");
-            Check((float)Get(o, "Strength") == 3.75f && (float)Get(o, "MinimumPitch") == .41f && (float)Get(o, "NonSteamStrength") == 2.25f && (float)Get(o, "NonSteamMinimumPitch") == .37f && (float)Get(o, "NonSteamMaximumPitch") == 1.85f, "actual parent migration preserves all five standalone pitch numbers");
-            Check(new[] { "Chuffs", "Gear", "Rolling", "Brakes", "Cocks", "Whistle", "ChuffLoops" }.All(f => !(bool)Get(o, f)) && (bool)Get(o, "AllSounds") && (bool)Get(o, "TraceAncillaries") && (int)Get(o, "SharedDonor") == 2, "actual parent migration preserves all sound group/trace/donor switches");
-            var overrides = (IList)Get(o, "DonorOverrides");
-            Check(overrides.Count == 1 && (string)Get(overrides[0], "LiveryId") == "fixture_loco" && (string)Get(overrides[0], "DonorId") == "fixture_donor", "actual parent migration preserves per-livery donor overrides");
-            Check((bool)Get(s, "SoundSettingsMigrationComplete") && (bool)Get(UnityModManager.ModSettings.Load<ToolboxSettings>(parent), "SoundSettingsMigrationComplete"), "successful migration marker persists in the shared parent settings file");
-            Check(retained.SequenceEqual(File.ReadAllBytes(original)), "migration preserves standalone source settings byte for byte");
-            Check(Flags.All(f => !GetFlag(s, f)) && ToolboxPatchCount() == 0, "settings migration does not enable a disabled feature");
-        }
-        finally { parent.OnUnload(parent); }
-
-        File.WriteAllText(original, legacy("9"));
-        Check(DadsToolbox.Main.Load(parent), "migrated parent reloads after standalone settings change");
-        try { Check((float)Get(Get(ParentField("settings"), "Sound"), "Strength") == 3.75f, "migration runs once and does not overwrite subsequent parent preferences"); }
-        finally { parent.OnUnload(parent); }
-
-        var explicitParent = SettingsFor(0); Set(Get(explicitParent, "Sound"), "Strength", 2.2f); Set(explicitParent, "SoundSettingsMigrationComplete", false); explicitParent.Save(parent);
-        retained = File.ReadAllBytes(original);
-        Check(DadsToolbox.Main.Load(parent), "parent with explicit nested sound values loads");
-        try
-        {
-            Check((float)Get(Get(ParentField("settings"), "Sound"), "Strength") == 2.2f, "explicit parent sound values take precedence over standalone migration");
-            parent.OnSaveGUI(parent);
-            Check((bool)Get(UnityModManager.ModSettings.Load<ToolboxSettings>(parent), "SoundSettingsMigrationComplete") && retained.SequenceEqual(File.ReadAllBytes(original)), "explicit parent precedence is saved without altering standalone XML");
-        }
-        finally { parent.OnUnload(parent); }
-
-        File.WriteAllText(parentFile, oldParent); File.WriteAllText(original, "<Settings><Strength>3.75");
-        retained = File.ReadAllBytes(original);
-        Check(DadsToolbox.Main.Load(parent), "malformed standalone settings do not prevent whole Toolbox loading");
-        try
-        {
-            Check(!(bool)Get(ParentField("settings"), "SoundSettingsMigrationComplete") && ((string)ParentField("migrationStatus")).Contains("failed"), "failed import retains an explicit retryable migration state");
-            Check(retained.SequenceEqual(File.ReadAllBytes(original)), "failed migration leaves malformed original untouched");
-        }
-        finally { parent.OnUnload(parent); }
-        File.WriteAllText(original, legacy("2.9"));
-        Check(DadsToolbox.Main.Load(parent), "migration retries after the standalone XML is corrected");
-        try { Check((bool)Get(ParentField("settings"), "SoundSettingsMigrationComplete") && (float)Get(Get(ParentField("settings"), "Sound"), "Strength") == 2.9f, "retry recovers the preserved source preference"); }
-        finally { parent.OnUnload(parent); }
-    }
     static bool GetFlag(object s, string f) { return (bool)Get(s, f); }
     static object Get(object target, string f) { return target.GetType().GetField(f, BF).GetValue(target); }
     static object GetProperty(object target, string f) { return target.GetType().GetProperty(f, BF).GetValue(target, null); }

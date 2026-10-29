@@ -10,7 +10,7 @@ namespace DadsToolbox.HudGuard
 {
     public enum HudGuardState
     {
-        Disabled, WaitingForHud, IncompatibleHud, BlockedByStandalone,
+        Disabled, WaitingForHud, IncompatibleHud,
         BlockedByOtherInstance, Enabled, Faulted, Unloaded
     }
 
@@ -22,8 +22,6 @@ namespace DadsToolbox.HudGuard
     {
         public const string HarmonyId = "jimtaplin.derailvalley.toolbox.hudguard";
         public const string HudModId = "HeadsUpDisplay_994";
-        public const string StandaloneModId = "DVRollingStockCompatibility";
-        private const string StandaloneOwner = "jimtaplin.derailvalley.rollingstockcompatibility";
         private static readonly MethodInfo Finalizer = typeof(HudGuardModule).GetMethod(
             "ProviderFinalizer", BindingFlags.NonPublic | BindingFlags.Static);
         private static HudGuardModule owner;
@@ -111,14 +109,6 @@ namespace DadsToolbox.HudGuard
                         !hud.Loaded ? "HeadsUpDisplay has not loaded." : "HeadsUpDisplay is inactive.");
                     return;
                 }
-                UnityModManager.ModEntry standalone = UnityModManager.FindMod(StandaloneModId);
-                if (standalone != null && standalone.Loaded && standalone.Active)
-                {
-                    faultAssembly = null;
-                    Deactivate(HudGuardState.BlockedByStandalone,
-                        "Rolling Stock Compatibility is active and already supplies the HUD guard. It also contains H6F; arrange migration in the parent Toolbox.");
-                    return;
-                }
                 Assembly hudAssembly = hud.Assembly;
                 Type providersType = hudAssembly == null ? null : hudAssembly.GetType("DvMod.HeadsUpDisplay.LocoProviders", false);
                 List<MethodInfo> providers = FindProviderMethods(providersType);
@@ -142,14 +132,6 @@ namespace DadsToolbox.HudGuard
                     if (info == null) continue;
                     foreach (Patch patch in info.Finalizers)
                     {
-                        Type declaring = patch.PatchMethod.DeclaringType;
-                        if (patch.owner == StandaloneOwner || (declaring != null &&
-                            declaring.FullName == "DVRollingStockCompatibility.HudLocoProviderFix"))
-                        {
-                            Deactivate(HudGuardState.BlockedByStandalone,
-                                "A standalone HUD guard patch remains loaded. Restart after arranging migration; its patches were left intact.");
-                            return;
-                        }
                         if (patch.PatchMethod == Finalizer && patch.owner != HarmonyId)
                         {
                             Deactivate(HudGuardState.BlockedByOtherInstance,

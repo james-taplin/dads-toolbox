@@ -13,13 +13,8 @@ namespace DadsToolbox.CclControls
     public sealed class ControlsModule
     {
         public const string HarmonyOwner = "jimtaplin.derailvalley.toolbox.cclcontrols";
-        public const string StandaloneModId = "DVCCLControlFix";
         public const string DependencyId = "DVCustomCarLoader";
         private static ControlsModule owner;
-        // Removing a loaded standalone entry cannot undo its prefab edits.
-        // Keep the restart boundary for the entire process, including module
-        // recreation, rather than treating removal from UMM as a live migration.
-        private static bool standaloneApplied;
         private static readonly Type[] PatchTypes = {
             typeof(DVCCLControlFix.BaseControlsOverrider_Init_Patch),
             typeof(DVCCLControlFix.TrainCar_LoadInterior_Patch),
@@ -30,7 +25,7 @@ namespace DadsToolbox.CclControls
         private readonly Stopwatch clock = Stopwatch.StartNew();
         private Harmony harmony;
         private bool parentActive, unloaded, faulted;
-        private UnityModManager.ModEntry observedDependency, observedStandalone;
+        private UnityModManager.ModEntry observedDependency;
         private Assembly observedDependencyAssembly;
         private bool dependencyWasReady;
         private double nextProbe;
@@ -82,28 +77,15 @@ namespace DadsToolbox.CclControls
                     if (RemoveOwned()) SetStatus((parentActive ? "Off" : "Toolbox disabled") + RestartNotice());
                     return;
                 }
-                var standalone = UnityModManager.FindMod(StandaloneModId);
-                if (standalone != null && (standalone.Loaded || standalone.Active))
-                    standaloneApplied = true;
                 var dependency = UnityModManager.FindMod(DependencyId);
                 bool dependencyReady = dependency != null && dependency.Loaded && dependency.Active;
                 var dependencyAssembly = dependencyReady ? dependency.Assembly : null;
                 validateOwnership |= !ReferenceEquals(dependency, observedDependency) ||
-                    dependencyAssembly != observedDependencyAssembly || dependencyReady != dependencyWasReady ||
-                    !ReferenceEquals(standalone, observedStandalone);
+                    dependencyAssembly != observedDependencyAssembly || dependencyReady != dependencyWasReady;
                 observedDependency = dependency; observedDependencyAssembly = dependencyAssembly;
-                dependencyWasReady = dependencyReady; observedStandalone = standalone;
-                // UMM dependency events, explicit configure/retry and observed
-                // dependency transitions reconcile metadata. Stable polling
-                // must not walk every Harmony patch in the game.
-                if (validateOwnership && !standaloneApplied && HasOwner(StandaloneModId))
-                    standaloneApplied = true;
-                if (standaloneApplied)
-                {
-                    RestartRequired = true;
-                    if (RemoveOwned()) SetStatus("Blocked: standalone DVCCLControlFix was loaded or patched. Disable/remove it and restart.");
-                    return;
-                }
+                dependencyWasReady = dependencyReady;
+                // Configuration and observed dependency transitions can retry
+                // activation. An already active owner needs no global scan.
                 if (!dependencyReady)
                 {
                     if (RemoveOwned()) SetStatus("Inactive: requires loaded and active CCL." + RestartNotice());

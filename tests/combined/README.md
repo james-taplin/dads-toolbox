@@ -7,10 +7,9 @@ loads that exact DLL with the installed Unity Mod Manager and Harmony under
 It checks all 256 combinations of the eight persisted internal switches using
 native UMM XML serialization, older parent settings, nested sound preferences,
 the single parent callback and dependency subscription, off/disabled lifecycle,
-default-selected cold dependency absence/inactivity, standalone conflicts,
-owned patch absence, and fresh instances after unload/reload. Actual parent
-sound migration uses an isolated sibling Settings.xml to check every existing
-option, original bytes, one-time import, parent precedence and failure/retry.
+default-selected cold dependency absence/inactivity, owned patch absence, and
+fresh instances after unload/reload. Older XML retains nested sound preferences
+and safely ignores obsolete options.
 An injected first-module cleanup failure proves every other cleanup is still
 attempted, failed disable remains suspended and foreign Harmony owners survive.
 The two Skin

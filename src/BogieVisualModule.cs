@@ -11,16 +11,12 @@ namespace DadsToolbox
     // persistence and GUI; native bogie physics does not depend on CCL.
     public sealed class BogieVisualModule
     {
-        public const string StandaloneId = "DVLocoBogieVisuals";
         private static BogieVisualModule owner;
         private readonly UnityModManager.ModEntry.ModLogger logger;
         private readonly string reportPath;
         private VisualRuntime runtime;
         private GameObject runtimeRoot;
-        private bool parentActive, unloaded, faulted, orphansChecked, orphanConflict;
-        private UnityModManager.ModEntry lastStandalone;
-        private bool lastStandaloneBusy;
-        private float nextProbe;
+        private bool parentActive, unloaded, faulted;
         private string status = "Off";
 
         public bool DesiredEnabled { get; private set; }
@@ -40,30 +36,15 @@ namespace DadsToolbox
             bool changed = DesiredEnabled != selected || parentActive != toolboxActive;
             DesiredEnabled = selected;
             parentActive = toolboxActive;
-            if (changed) { faulted = false; orphansChecked = false; }
-            Reconcile(changed);
-        }
-
-        public void Tick()
-        {
-            if (unloaded || !parentActive || !DesiredEnabled) return;
-            TickNative();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void TickNative()
-        {
-            if (Time.unscaledTime < nextProbe) return;
-            nextProbe = Time.unscaledTime + 1f;
-            Reconcile(false);
+            if (changed) faulted = false;
+            Reconcile();
         }
 
         public void Refresh()
         {
             if (unloaded) return;
             faulted = false;
-            orphansChecked = false;
-            Reconcile(true);
+            Reconcile();
             if (Active) runtime.RefreshMapped();
         }
 
@@ -87,42 +68,19 @@ namespace DadsToolbox
             return true;
         }
 
-        private void Reconcile(bool checkOrphans)
+        private void Reconcile()
         {
             if (unloaded) return;
             if (!parentActive) { StopRuntime("Toolbox disabled"); return; }
             if (!DesiredEnabled) { StopRuntime("Off"); return; }
             try
             {
-                var standalone = UnityModManager.FindMod(StandaloneId);
-                bool standaloneBusy = standalone != null && (standalone.Loaded || standalone.Active);
-                if (!ReferenceEquals(lastStandalone, standalone) || lastStandaloneBusy != standaloneBusy)
-                    orphansChecked = false;
-                lastStandalone = standalone;
-                lastStandaloneBusy = standaloneBusy;
-                if (standaloneBusy)
-                {
-                    StopRuntime("Inactive: standalone Bogie Visual Smoothing is loaded. Remove it and restart before using the Toolbox copy.");
-                    return;
-                }
                 if (owner != null && owner != this)
                 {
                     StopRuntime("Inactive: another Toolbox bogie runtime owns the visuals.");
                     return;
                 }
                 if (faulted) return;
-                // Full runtime discovery happens only at activation/Refresh;
-                // stable Update polling checks the single UMM entry above.
-                if (checkOrphans || !orphansChecked)
-                {
-                    orphanConflict = HasOrphanRuntime();
-                    orphansChecked = true;
-                }
-                if (orphanConflict)
-                {
-                    StopRuntime("Inactive: another bogie visual runtime remains loaded. Remove the duplicate and restart.");
-                    return;
-                }
                 if (Active) return;
                 if (!ReferenceEquals(runtime, null) && !StopRuntime("Restarting bogie visuals")) return;
                 StartRuntime();
@@ -151,20 +109,6 @@ namespace DadsToolbox
             runtime.Logger = logger;
             runtime.ReportPath = reportPath;
             runtimeRoot.SetActive(true);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool HasOrphanRuntime()
-        {
-            foreach (var candidate in Resources.FindObjectsOfTypeAll<MonoBehaviour>())
-            {
-                if (!candidate || ReferenceEquals(candidate, runtime)) continue;
-                if (candidate.GetType().FullName == "DVLocoBogieVisuals.VisualRuntime") return true;
-                // A successfully stopped Toolbox runtime can await deferred
-                // destruction without owning any callbacks, proxies or renderers.
-                if (candidate is VisualRuntime && candidate.isActiveAndEnabled) return true;
-            }
-            return false;
         }
 
         private bool StopRuntime(string reason)

@@ -2,7 +2,7 @@
 
 A collection of fixes and tweaks for Derail Valley, together in one Unity Mod Manager mod. Turn each fix on or off independently, with extra settings for sound pitch and sign clearance.
 
-**1.0.0-rc.2** is a release candidate for testing. [Changelog](CHANGELOG.md) · [User guide](docs/README.md)
+**1.0.0-rc.3** is a release candidate for testing. [Changelog](CHANGELOG.md) · [User guide](docs/README.md)
 
 The latest published download is [0.4.5-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.5-dev).
 
@@ -23,12 +23,9 @@ Only the fixes relevant to your installed mods run. A missing dependency leaves 
 ## Installation
 
 1. Close Derail Valley and install the release ZIP through Unity Mod Manager.
-2. Disable standalone versions of the included fixes. If moving from SteamSizePitch, [preserve your sound settings first](docs/README.md#switching-from-standalone-fixes).
-3. Start the game and open Dad's Toolbox in UMM to choose your fixes.
+2. Start the game and open Dad's Toolbox in UMM to choose your fixes.
 
 Keep CCL, Skin Manager, HeadsUpDisplay and DoubleTrack installed if you use their fixes. Loco Sound Pitch cannot run alongside ZSounds.
-
-Bogie Visual Smoothing replaces the standalone DVLocoBogieVisuals mod. Remove the standalone from the game's Mods folder and restart before enabling the Toolbox copy; only one may run.
 
 Restart after changing mods or when you need to undo changes already applied to vehicles or signs. See the [user guide](docs/README.md) for compatibility and toggle behaviour.
 
@@ -40,4 +37,4 @@ On Windows, with a .NET SDK and Derail Valley installed:
 .\Build.ps1 -GamePath 'C:\path\to\Derail Valley'
 ~~~
 
-[Technical validation](docs/VALIDATION-1.0.0-rc.2.md) is available for contributors.
+[Technical validation](docs/VALIDATION-1.0.0-rc.3.md) is available for contributors.

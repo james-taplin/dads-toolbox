@@ -11,29 +11,20 @@ namespace CCLSmokeFix
     public sealed class SmokeFixModule
     {
         public const string HarmonyId = "jimtaplin.derailvalley.toolbox.smoke";
-        public const string StandaloneModId = "CCLSmokeFix";
         public const string ReloadNotice = "Applies when locomotives spawn/load. Previously corrected locomotives retain their values until reload/restart.";
 
-        private readonly string ownerId;
         private Harmony harmony;
         private MethodInfo target;
         private Action<string> logger;
-        private Func<bool> standaloneIsActive;
         internal static SmokeFixModule Current { get; private set; }
 
         public bool Active { get; private set; }
         public bool RequiresReloadForRestoration { get; private set; }
         public string Status { get; private set; } = "Off";
 
-        public SmokeFixModule() : this(HarmonyId) { }
-
-        // The existing standalone host shares the correction, but keeps its own ID.
-        internal SmokeFixModule(string ownerId) { this.ownerId = ownerId; }
-
-        public bool Install(Action<string> log, Func<bool> isStandaloneActive)
+        public bool Install(Action<string> log)
         {
             logger = log;
-            standaloneIsActive = isStandaloneActive;
             if (Current != null && !ReferenceEquals(Current, this))
             {
                 SetStatus("Inactive: another smoke module instance already owns this assembly's patch.");
@@ -44,19 +35,14 @@ namespace CCLSmokeFix
             {
                 target = AccessTools.Method(typeof(ParticlesPortReadersController), nameof(ParticlesPortReadersController.Init));
                 if (target == null) throw new MissingMethodException("ParticlesPortReadersController.Init");
-                if (HasStandaloneConflict())
-                {
-                    Stop("Inactive: standalone CCL Smoke Fix is active or still patched. Disable/remove it and restart before enabling Toolbox smoke.");
-                    return false;
-                }
                 if (Active) return true;
-                if (Harmony.GetPatchInfo(target)?.Owners.Contains(ownerId) == true)
+                if (Harmony.GetPatchInfo(target)?.Owners.Contains(HarmonyId) == true)
                 {
                     SetStatus("Inactive: this smoke patch owner is already registered by another copy.");
                     return false;
                 }
 
-                harmony = new Harmony(ownerId);
+                harmony = new Harmony(HarmonyId);
                 Current = this;
                 harmony.Patch(target, prefix: new HarmonyMethod(typeof(SmokeColorFix).GetMethod(
                     nameof(SmokeColorFix.Prefix), BindingFlags.NonPublic | BindingFlags.Static)));
@@ -82,26 +68,7 @@ namespace CCLSmokeFix
         { return Stop(RequiresReloadForRestoration ? "Off. " + ReloadNotice : "Off"); }
 
         internal bool CanApply()
-        {
-            if (!Active || !ReferenceEquals(Current, this)) return false;
-            try
-            {
-                // Also guard the next Init if a standalone mod activates before the
-                // parent's dependency callback has refreshed this module.
-                if (!HasStandaloneConflict()) return true;
-                Stop("Inactive: standalone CCL Smoke Fix became active. Toolbox smoke stopped.");
-            }
-            catch (Exception ex) { Fault(ex); }
-            return false;
-        }
-
-        private bool HasStandaloneConflict()
-        {
-            if (ownerId == StandaloneModId) return false;
-            if (standaloneIsActive == null)
-                throw new ArgumentNullException(nameof(standaloneIsActive), "The parent must supply the standalone mod's active state.");
-            return standaloneIsActive() || Harmony.GetPatchInfo(target)?.Owners.Contains(StandaloneModId) == true;
-        }
+        { return Active && ReferenceEquals(Current, this); }
 
         private bool Stop(string status)
         {
@@ -112,7 +79,7 @@ namespace CCLSmokeFix
             try
             {
                 if (harmony != null && target != null)
-                    harmony.Unpatch(target, HarmonyPatchType.Prefix, ownerId);
+                    harmony.Unpatch(target, HarmonyPatchType.Prefix, HarmonyId);
                 harmony = null;
             }
             catch (Exception ex)

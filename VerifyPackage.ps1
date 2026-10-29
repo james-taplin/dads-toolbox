@@ -1,6 +1,6 @@
 param(
     [string]$Path,
-    [ValidatePattern('^(dev|rc\.[1-9][0-9]*)?$')][string]$ReleaseSuffix = 'rc.2'
+    [ValidatePattern('^(dev|rc\.[1-9][0-9]*)?$')][string]$ReleaseSuffix = 'rc.3'
 )
 $ErrorActionPreference = 'Stop'
 if (-not $Path) {
@@ -42,10 +42,7 @@ if ($taskValidation.passed -ne $taskSummedPassed -or $taskValidation.failed -ne 
 if (($taskChecked | Where-Object entry -CEQ 'DadsToolbox/DadsToolbox.dll').sha256 -ne $taskActualBinary) { throw 'Packaged DLL differs from build.' }
 $taskInfo = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'Info.json') | ConvertFrom-Json
 if ($taskInfo.EntryMethod -ne 'DadsToolbox.Main.Load' -or $taskInfo.Id -ne 'DadsToolbox') { throw 'Unexpected UMM identity.' }
-if ('DVLocoBogieVisuals' -notin @($taskInfo.LoadAfter)) {
-    throw 'Cold-start duplicate protection requires optional load ordering after the standalone bogie mod.'
-}
-foreach ($taskOptional in @('SkinManagerMod','DoubleTrack','DVCustomCarLoader','HeadsUpDisplay_994','em_h6f_main','SteamSizePitch','DVCCLControlFix','DVRollingStockCompatibility','CCLSmokeFix','DoubleTrackSignClearance','DVLocoBogieVisuals')) {
+foreach ($taskOptional in @('SkinManagerMod','DoubleTrack','DVCustomCarLoader','HeadsUpDisplay_994','ZSounds')) {
     if ($taskInfo.Requirements -contains $taskOptional) { throw "Optional dependency became a required dependency: $taskOptional" }
 }
 $taskModules = @('SkinDamageFix','SkinRegistrationFix','DoubleTrackSigns','HudGuard','CclControlFix','LocoSoundPitch','SmokeFix','BogieVisualSmoothing')

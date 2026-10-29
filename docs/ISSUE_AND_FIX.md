@@ -6,13 +6,9 @@ Check its status in Dad's Toolbox. Make sure the required mod is installed, enab
 
 After resolving an error, try **Retry optional features**. Restart if you have added, removed or disabled another mod.
 
-## A standalone fix is detected
-
-Disable the old standalone version and restart the game. Turning it off during a running session can leave its changes active. Keep the underlying CCL, HUD, Skin Manager or DoubleTrack mod installed.
-
 ## Sound pitch is unavailable
 
-Check for a SteamSizePitch settings-import message or a conflict with SteamSizePitch or ZSounds. See [sound settings migration](README.md#switching-from-standalone-fixes).
+Check that CCL is active and ZSounds is not loaded. Existing Toolbox sound values are saved in Settings.xml.
 
 ## A bundled skin is missing
 
