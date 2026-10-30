@@ -1,0 +1,97 @@
+DAD'S TOOLBOX — NEXUS LISTING DRAFT
+
+MOD NAME
+Dad's Toolbox
+
+SHORT DESCRIPTION
+Steam chuff and smoke fixes, smoother bogie visuals, CCL control repairs, sound pitch options, skin fixes and track-sign clearance in one configurable UMM mod.
+
+FILE NAME / VERSION
+Dad's Toolbox — Public Beta
+1.0.0-rc.4
+
+MAIN DESCRIPTION — Nexus BBCode
+
+[b]A few useful fixes, one toolbox.[/b]
+
+Dad's Toolbox brings together fixes and optional tweaks for Derail Valley. Each has its own switch in Unity Mod Manager, so you can use the parts you want. Features that need another mod stay inactive when that dependency is missing.
+
+[b]What's inside[/b]
+
+[list]
+[*][b]Chuff Fix[/b] — Matches steam audio to each engine's native exhaust timing, including multi-cylinder and articulated locomotives. Reuses existing recordings and adapts recognised running loops. Works with vanilla and CCL steam locomotives.
+[*][b]Bogie Visual Smoothing[/b] — Smooths visual copies of bogies while keeping native steering, physics and wheel/rod animation. Works with vanilla and CCL stock.
+[*][b]CCL Smoke Fix[/b] — Corrects affected stack-smoke colour and opacity settings, including overly opaque thick smoke at low exhaust flow.
+[*][b]CCL Control Fix[/b] — Repairs missing control connections on supported CCL locomotives, including keyboard inputs and some rear-cab and HUD connections. It cannot repair every incorrectly authored control.
+[*][b]Loco Sound Pitch[/b] — Adjusts eligible native exterior sounds to suit CCL locomotive size: smaller boilers or lighter diesels pitch up; larger boilers or heavier diesels pitch down. Separate steam and diesel strength settings and upper/lower caps are included. Chuff Fix keeps the rhythmic loops it controls at native exhaust cadence.
+[*][b]HUD Guard[/b] — Guards against certain invalid force, power and wheel-slip readings in the supported HeadsUpDisplay mod.
+[*][b]Skin Manager fixes[/b] — Preserves scorch during skin reloads and helps skins bundled with CCL vehicles register correctly. These are two separate switches.
+[*][b]DoubleTrack sign clearance[/b] — Moves generated signs away from nearby tracks, with adjustable clearance and movement limits.
+[/list]
+
+[b]Requirements[/b]
+
+Install Unity Mod Manager. The other mods are needed only for their related fixes:
+
+[list]
+[*]Custom Car Loader: CCL controls, smoke and locomotive sound pitch.
+[*]Skin Manager 4.4.1: scorch preservation. Embedded-skin registration also requires CCL 3.1.9 or newer; checked with 3.1.11.
+[*]HeadsUpDisplay 1.1.2: HUD Guard.
+[*]DoubleTrack 2.1.1: sign clearance.
+[*]Chuff Fix and Bogie Visual Smoothing need no additional mod.
+[/list]
+
+[b]Installation[/b]
+
+[list=1]
+[*]Close the game and drag the ZIP into Unity Mod Manager's Mods tab.
+[*]Enable Dad's Toolbox, start the game and open its UMM settings.
+[*]Choose your fixes. Each status explains whether the feature is active or waiting for a dependency.
+[/list]
+
+This mod does not replace CCL, Skin Manager, HeadsUpDisplay or DoubleTrack. Keep the dependencies you use installed. Do not run duplicate standalone versions of the included fixes alongside Toolbox. Loco Sound Pitch is incompatible with ZSounds.
+
+Some fixes change already-loaded vehicles or signs. Restart for a clean comparison after disabling them; the included guide explains each toggle. When updating, keep Settings.xml if you want to retain your preferences.
+
+[b]Public beta[/b]
+
+Chuff Fix has been listening-tested on 2-, 4-, 6- and 16-cylinder locomotives. The integrated build has also been checked in game for chuff adaptation, smoke correction, visual bogie presentation and other fixes. This is still a beta: individual locomotive setups and combinations of mods can differ. No multiplayer compatibility guarantee is made for this release.
+
+If something goes wrong, include Player.log, your Toolbox/game versions, the affected locomotive and the steps needed to reproduce it. A short clip is useful for sound or visual problems.
+
+Source: https://github.com/james-taplin/dads-toolbox
+
+CREDITS — paste into the credits field
+
+James Taplin (james-taplin) — mod design, integration and gameplay testing. Code developed using OpenAI Codex and Anthropic Claude under James's direction.
+
+Thanks to the creators and maintainers of the game, mod loader and supported mods:
+• Altfuture — Derail Valley.
+• newman55 and contributors — Unity Mod Manager.
+• pardeike and contributors — Harmony.
+• Katycat, Wiz and lassombra — Custom Car Loader.
+• Katycat, Zeibach, Cbethax and Cruzer — Skin Manager.
+• Rinzler and Zeibach — HeadsUpDisplay.
+• Chump_the_Lump — DoubleTrack.
+
+These credits acknowledge the tools and mods Toolbox works with. Their mods, locomotive models, textures and recordings are not included in this download.
+
+PERMISSIONS — author notes
+
+Dad's Toolbox is released under the MIT License.
+
+You may use, copy, modify, distribute, sublicense and sell copies, including in commercial projects, provided the copyright notice and MIT permission notice are retained in all copies or substantial portions of the software. The software is provided without warranty.
+
+Keeping a link to the original project and clearly identifying modified versions is appreciated, but is not an additional licence condition. Third-party projects retain their own copyrights and licences.
+
+INITIAL NEXUS CHANGELOG
+Version 1.0.0-rc.4 — Initial public beta
+
+• First Nexus beta release, combining eight feature groups with nine independent switches in Unity Mod Manager.
+• Includes Chuff Fix, Bogie Visual Smoothing, CCL Smoke Fix, CCL Control Fix, Loco Sound Pitch, HUD Guard, two Skin Manager fixes and DoubleTrack sign clearance.
+• Adds separate steam/diesel pitch strength and lower/upper caps, plus adjustable sign clearance.
+• Keeps Chuff Fix's rhythmic loops at native exhaust cadence while other eligible sounds retain their pitch settings.
+• Includes live cleanup for chuff and bogie features, dependency-aware status messages and an included toggle/restart guide.
+
+SHORT FILE DESCRIPTION
+Initial public beta. Install the ZIP through Unity Mod Manager. All features have independent switches; additional mods are required only for their related fixes. See the main description for compatibility and restart notes.

@@ -1,0 +1,7 @@
+Version 1.0.0-rc.4 — Initial public beta
+
+• First Nexus beta release, combining eight feature groups with nine independent switches in Unity Mod Manager.
+• Includes Chuff Fix, Bogie Visual Smoothing, CCL Smoke Fix, CCL Control Fix, Loco Sound Pitch, HUD Guard, two Skin Manager fixes and DoubleTrack sign clearance.
+• Adds separate steam/diesel pitch strength and lower/upper caps, plus adjustable sign clearance.
+• Keeps Chuff Fix's rhythmic loops at native exhaust cadence while other eligible sounds retain their pitch settings.
+• Includes live cleanup for chuff and bogie features, dependency-aware status messages and an included toggle/restart guide.
