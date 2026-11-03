@@ -2,11 +2,9 @@
 
 ## [1.0.0-rc.4](https://github.com/james-taplin/dads-toolbox/releases/tag/1.0.0-rc.4) — 3 November 2026
 
-- First public 1.0 release candidate, with eight feature groups and nine independent switches.
-- Added Chuff Fix and Bogie Visual Smoothing for vanilla and CCL stock, with live switching and cleanup.
-- Coordinated Chuff Fix with Sound Pitch to preserve native rhythmic-loop cadence and Doppler pitch alignment.
-- Improved sign clearance at bridges and underpasses and reduced repeated sound/control discovery work.
-- Released under MIT with a minimal UMM install ZIP.
+- First public RC with eight independently switchable feature groups.
+- Added Chuff Fix and Bogie Visual Smoothing.
+- Improved sound/control performance and sign clearance.
 
 ## 1.0.0-rc.3 — 29 October 2026
 

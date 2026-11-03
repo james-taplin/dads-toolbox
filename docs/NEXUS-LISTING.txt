@@ -85,13 +85,11 @@ You may use, copy, modify, distribute, sublicense and sell copies, including in 
 Keeping a link to the original project and clearly identifying modified versions is appreciated, but is not an additional licence condition. Third-party projects retain their own copyrights and licences.
 
 INITIAL NEXUS CHANGELOG
-Version 1.0.0-rc.4 — Initial public beta
+1.0.0-rc.4 — Initial public release candidate
 
-• First Nexus beta release, combining eight feature groups with nine independent switches in Unity Mod Manager.
-• Includes Chuff Fix, Bogie Visual Smoothing, CCL Smoke Fix, CCL Control Fix, Loco Sound Pitch, HUD Guard, two Skin Manager fixes and DoubleTrack sign clearance.
-• Adds separate steam/diesel pitch strength and lower/upper caps, plus adjustable sign clearance.
-• Keeps Chuff Fix's rhythmic loops at native exhaust cadence while other eligible sounds retain their pitch settings.
-• Includes live cleanup for chuff and bogie features and dependency-aware status messages. Toggle/restart guidance is available on the mod page and in the online user guide.
+Chuff, smoke and CCL control fixes, bogie smoothing, sound pitch, HUD protection, skin fixes and sign clearance.
+
+All features independently switchable in Unity Mod Manager.
 
 SHORT FILE DESCRIPTION
 Initial public beta. Install the ZIP through Unity Mod Manager. All features have independent switches; additional mods are required only for their related fixes. See the main description for compatibility and restart notes.
