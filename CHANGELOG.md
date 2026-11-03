@@ -1,10 +1,12 @@
 # Changelog
 
-## 1.0.0-rc.4 — 29 October 2026
+## [1.0.0-rc.4](https://github.com/james-taplin/dads-toolbox/releases/tag/1.0.0-rc.4) — 3 November 2026
 
-- Added an independent Chuff Fix for native steam exhaust timing, short chuff banks and recognised running loops.
-- Coordinated rhythmic loops with Sound Pitch and added live reader restoration when toggling the feature.
-- Kept Doppler pitch aligned during running-loop clip rate changes.
+- First public 1.0 release candidate, with eight feature groups and nine independent switches.
+- Added Chuff Fix and Bogie Visual Smoothing for vanilla and CCL stock, with live switching and cleanup.
+- Coordinated Chuff Fix with Sound Pitch to preserve native rhythmic-loop cadence and Doppler pitch alignment.
+- Improved sign clearance at bridges and underpasses and reduced repeated sound/control discovery work.
+- Released under MIT with a minimal UMM install ZIP.
 
 ## 1.0.0-rc.3 — 29 October 2026
 

@@ -1,17 +1,17 @@
 Dad's Toolbox
 
-James Taplin (james-taplin) — mod design, integration and gameplay testing.
-Code developed using OpenAI Codex and Anthropic Claude under James's direction.
+Altfuture / Derail Valley;
+newman55 and contributors / Unity Mod Manager;
+pardeike and contributors / Harmony;
+Katycat, Wiz and lassombra / Custom Car Loader;
+Katycat, Zeibach, Cbethax and Cruzer / Skin Manager;
+Rinzler and Zeibach / HeadsUpDisplay;
+Chump_the_Lump / DoubleTrack;
 
-Thanks to the creators and maintainers of the game, mod loader and supported mods:
+AND:
 
-Altfuture — Derail Valley.
-newman55 and contributors — Unity Mod Manager.
-pardeike and contributors — Harmony.
-Katycat, Wiz and lassombra — Custom Car Loader.
-Katycat, Zeibach, Cbethax and Cruzer — Skin Manager.
-Rinzler and Zeibach — HeadsUpDisplay.
-Chump_the_Lump — DoubleTrack.
+James Taplin / JimTaplin / Toolbox direction, integration, in-game testing and public release;
+OpenAI Codex and Anthropic Claude / Coding assistance, debugging, validation and release tooling under James's direction.
 
 These credits acknowledge the tools and mods Toolbox works with. Their mods,
 locomotive models, textures and recordings are not included in this download.

@@ -1,8 +1,13 @@
 # Validation: 1.0.0-rc.4
 
 All eleven suites pass: **17,596 checks, zero candidate failures**, against the
-same compiled DLL. This candidate is staged locally and has not been installed
-or published.
+same compiled DLL. These build checks were completed on 29 October 2026.
+
+Subsequent installation and game-log reviews through 2 November found no Toolbox
+faults or exception stacks. Logs demonstrate chuff adaptation, smoke correction,
+pitch requests in both directions, bogie presentation and sign clearance.
+James also reports accepted chuff listening tests on 2-, 4-, 6- and 16-cylinder
+locomotives. This supports a public RC, not universal vehicle coverage.
 
 | Suite | Passing checks |
 | --- | ---: |
@@ -42,17 +47,14 @@ Chuff and bogie behaviour is covered separately from the CLR parent fixture.
 Existing module suites are rerun against the same combined DLL. The package
 contains one UMM entry and no game or dependency assemblies.
 
-## Remaining acceptance
+## Limits
 
-Final listening tests must cover stock two-cylinder, multi-cylinder, compound,
-articulated and geared locomotives through crawl, loop transitions, high speed,
-stop, reverse, slip and reload. Include conventional → Meyer → conventional and
-Dockside/Shay. Isolated fixtures cannot establish every vehicle pack's sound,
-real-game patch order or performance.
-
-Deployment requires a closed game, backing up standalone MultiCylinderChuffFix
-outside Mods, and a fresh restart. Preserve Settings.xml and locomotive packs.
-The standalone 0.2.1 remains the fallback until game acceptance is complete.
+Isolated fixtures and the tested locomotive packs do not establish every vehicle
+pack's sound or compatibility. Multiplayer remains unverified. Recent logs show
+one-time sound setup costs around 160–204 ms; they do not provide a controlled
+steady-state performance comparison. HUD Guard intentionally waits when the
+supported HUD is disabled. Skin and control startup status alone does not prove
+an individual repair occurred in every session.
 
 DLL SHA256:
 `0DCF2A1BB5E951B864AADA6C13C2CA784B3EB7C897906622E35C689EA48CB565`

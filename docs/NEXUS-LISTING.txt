@@ -51,7 +51,7 @@ Install Unity Mod Manager. The other mods are needed only for their related fixe
 
 This mod does not replace CCL, Skin Manager, HeadsUpDisplay or DoubleTrack. Keep the dependencies you use installed. Do not run duplicate standalone versions of the included fixes alongside Toolbox. Loco Sound Pitch is incompatible with ZSounds.
 
-Some fixes change already-loaded vehicles or signs. Restart for a clean comparison after disabling them; the included guide explains each toggle. When updating, keep Settings.xml if you want to retain your preferences.
+Some fixes change already-loaded vehicles or signs. Restart for a clean comparison after disabling them; the online user guide explains each toggle. When updating, keep Settings.xml if you want to retain your preferences.
 
 [b]Public beta[/b]
 
@@ -91,7 +91,7 @@ Version 1.0.0-rc.4 — Initial public beta
 • Includes Chuff Fix, Bogie Visual Smoothing, CCL Smoke Fix, CCL Control Fix, Loco Sound Pitch, HUD Guard, two Skin Manager fixes and DoubleTrack sign clearance.
 • Adds separate steam/diesel pitch strength and lower/upper caps, plus adjustable sign clearance.
 • Keeps Chuff Fix's rhythmic loops at native exhaust cadence while other eligible sounds retain their pitch settings.
-• Includes live cleanup for chuff and bogie features, dependency-aware status messages and an included toggle/restart guide.
+• Includes live cleanup for chuff and bogie features and dependency-aware status messages. Toggle/restart guidance is available on the mod page and in the online user guide.
 
 SHORT FILE DESCRIPTION
 Initial public beta. Install the ZIP through Unity Mod Manager. All features have independent switches; additional mods are required only for their related fixes. See the main description for compatibility and restart notes.

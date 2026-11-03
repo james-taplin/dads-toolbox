@@ -4,7 +4,7 @@ A collection of fixes and tweaks for Derail Valley, together in one Unity Mod Ma
 
 **1.0.0-rc.4** is a release candidate for testing. [Changelog](CHANGELOG.md) · [User guide](docs/README.md)
 
-The latest published download is [0.4.5-dev](https://github.com/james-taplin/dads-toolbox/releases/tag/0.4.5-dev).
+Download the [1.0.0-rc.4 prerelease](https://github.com/james-taplin/dads-toolbox/releases/tag/1.0.0-rc.4).
 
 ## What's included
 
@@ -26,6 +26,8 @@ Only the fixes relevant to your installed mods run. A missing dependency leaves 
 1. Close Derail Valley and install the release ZIP through Unity Mod Manager.
 2. Start the game and open Dad's Toolbox in UMM to choose your fixes.
 
+Remove standalone copies of the included fixes before starting the game. The ZIP contains only the mod DLL, UMM metadata and MIT licence notice; settings are created automatically.
+
 Keep CCL, Skin Manager, HeadsUpDisplay and DoubleTrack installed if you use their fixes. Loco Sound Pitch cannot run alongside ZSounds.
 
 Restart after changing mods or when you need to undo changes already applied to vehicles or signs. See the [user guide](docs/README.md) for compatibility and toggle behaviour.
@@ -39,3 +41,7 @@ On Windows, with a .NET SDK and Derail Valley installed:
 ~~~
 
 [Technical validation](docs/VALIDATION-1.0.0-rc.4.md) is available for contributors.
+
+## Credits and permissions
+
+See [credits](CREDITS.txt). Toolbox's original code is released under the [MIT License](LICENSE).
