@@ -2,9 +2,22 @@
 
 ## [1.0.0-rc.4](https://github.com/james-taplin/dads-toolbox/releases/tag/1.0.0-rc.4) — 3 November 2026
 
-- First public RC with eight independently switchable feature groups.
-- Added Chuff Fix and Bogie Visual Smoothing.
-- Improved sound/control performance and sign clearance.
+Public release candidate with eight independently switchable feature groups.
+
+- Chuff Fix — native steam exhaust timing and short chuff-bank repairs.
+- Bogie Visual Smoothing — smoother visuals while retaining native physics and animation.
+- CCL Smoke Fix — corrected stack-smoke colour and opacity.
+- CCL Control Fix — repairs missing keyboard, rear-cab and HUD connections on supported locomotives.
+- Loco Sound Pitch — size-based steam/diesel pitch, with separate strength and limits.
+- HUD Guard — protection against invalid locomotive providers in HeadsUpDisplay.
+- Skin Manager fixes — scorch preservation and embedded-skin registration, separately switchable.
+- DoubleTrack Sign Clearance — adjustable clearance from nearby tracks.
+
+Designed to be save-game safe: no game-save format changes or additional vehicle types. Toolbox settings are stored separately. Restart after disabling or removing it to clear changes already applied during the session.
+
+Install through Unity Mod Manager. Remove standalone copies of the included fixes and keep the dependencies you use installed. Features with missing dependencies remain inactive. Loco Sound Pitch is incompatible with ZSounds.
+
+This is an RC; locomotive/mod coverage varies and multiplayer compatibility is not established.
 
 ## 1.0.0-rc.3 — 29 October 2026
 

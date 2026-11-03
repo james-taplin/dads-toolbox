@@ -28,6 +28,8 @@ Embedded-skin registration has been checked with CCL 3.1.11. Newer CCL versions 
 
 ## Updating and compatibility
 
+Toolbox is designed to be safe to add to or remove from existing saves. It does not change the game-save format or add vehicle types; its settings are stored separately. Restart after disabling or removing it to clear changes already applied during the session. Keep the locomotive and skin mods your save uses installed.
+
 Loco Sound Pitch is incompatible with ZSounds. Choose which one you want to use.
 
 Remove standalone MultiCylinderChuffFix before using the integrated Chuff Fix, then restart. A loaded standalone or its remaining patches keep the integrated feature inactive.
